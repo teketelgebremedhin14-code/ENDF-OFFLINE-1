@@ -316,15 +316,16 @@ const ChiefOfStaffView: React.FC<ChiefOfStaffViewProps> = ({ onBack }) => {
                                 <div>
                                     <label className="text-xs font-bold text-gray-400 block mb-2">ENEMY PROFILE</label>
                                     <select 
-                                        value={enemyProfile} 
-                                        onChange={(e) => setEnemyProfile(e.target.value)}
-                                        className="w-full bg-military-900 border border-military-600 rounded p-3 text-white text-sm focus:border-purple-500 outline-none"
-                                    >
-                                        <option>Conventional Force (State Actor)</option>
-                                        <option>Insurgent / Guerilla</option>
-                                        <option>Hybrid / Asymmetric</option>
-                                        <option>Terrorist Cell</option>
-                                    </select>
+    value={enemyProfile} 
+    onChange={(e) => setEnemyProfile(e.target.value)}
+    className="w-full bg-military-900 border border-military-600 rounded p-3 text-white text-sm focus:border-purple-500 outline-none"
+>
+    <option value="Conventional Force (State Actor)">Conventional Force (State Actor)</option>
+    <option value="Insurgent / Guerilla">Insurgent / Guerilla</option>
+    <option value="Hybrid / Asymmetric">Hybrid / Asymmetric</option>
+    <option value="Terrorist Cell">Terrorist Cell</option>
+</select>
+                                    
                                 </div>
 
                                 <div>

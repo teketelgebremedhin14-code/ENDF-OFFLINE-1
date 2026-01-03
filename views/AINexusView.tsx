@@ -357,12 +357,12 @@ const AINexusView: React.FC<AINexusViewProps> = ({ onBack }) => {
                                 <div className="p-2 border-l-2 border-blue-500 bg-blue-900/10">
                                     <div className="text-gray-500 mb-1">AUDIO IN (AMHARIC):</div>
                                     <div className="text-white">"ክፍል 4 ወደ ምዕራብ እየተንቀሳቀሰ ነው።"</div>
-                                    <div className="text-indigo-400 mt-1">>> "Unit 4 is moving west."</div>
+                                    <div className="text-indigo-400 mt-1"> "Unit 4 is moving west."</div>
                                 </div>
                                 <div className="p-2 border-l-2 border-yellow-500 bg-yellow-900/10">
                                     <div className="text-gray-500 mb-1">AUDIO IN (SOMALI):</div>
                                     <div className="text-white">"Gaadiidka saadka ayaa soo daahay."</div>
-                                    <div className="text-indigo-400 mt-1">>> "The logistics convoy is delayed."</div>
+                                    <div className="text-indigo-400 mt-1"> "The logistics convoy is delayed."</div>
                                 </div>
                             </div>
                         </div>
