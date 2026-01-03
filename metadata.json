@@ -1,0 +1,9 @@
+{
+  "name": "ENDF - Ethiopian National Defence Force Nexus",
+  "description": "A comprehensive military command and control dashboard for the Ethiopian National Defence Force. Built on 7 Foundational Principles: Hierarchical Design, Modular View-Based Access, AI-First Approach, Security-First Implementation, Online Operation (Gemini), Multilingual Support, and Single Nervous System.",
+  "requestFramePermissions": [
+    "microphone",
+    "camera",
+    "geolocation"
+  ]
+}
