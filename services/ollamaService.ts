@@ -1,11 +1,14 @@
 import { ChatMessage } from "../types";
 
-// Default to 127.0.0.1 which is more reliable than localhost on Windows/IPv6 setups
+// Use 127.0.0.1 for IPv4 reliability - ALWAYS use this instead of localhost
 let OLLAMA_BASE_URL = localStorage.getItem('endo_ollama_url') || 'http://127.0.0.1:11434';
 const MODEL = 'llama3';
 
 export const setOllamaUrl = (url: string) => {
     let cleaned = url.trim();
+    
+    // ENSURE localhost is converted to 127.0.0.1
+    cleaned = cleaned.replace(/localhost/gi, '127.0.0.1');
     
     // Remove trailing slash
     if (cleaned.endsWith('/')) cleaned = cleaned.slice(0, -1);
@@ -14,18 +17,59 @@ export const setOllamaUrl = (url: string) => {
     if (cleaned.endsWith('/api/generate')) cleaned = cleaned.replace('/api/generate', '');
     if (cleaned.endsWith('/api/chat')) cleaned = cleaned.replace('/api/chat', '');
     
-    // Auto-append port 11434 if no port is specified (except for https/ngrok cases)
+    // Ensure it has http:// protocol
+    if (!cleaned.startsWith('http://') && !cleaned.startsWith('https://')) {
+        cleaned = `http://${cleaned}`;
+    }
+    
+    // Ensure it has port 11434
     const hasPort = /:\d+$/.test(cleaned);
-    if (!hasPort && !cleaned.startsWith('https://')) {
+    if (!hasPort) {
         cleaned = `${cleaned}:11434`;
-        console.log(`[System] Auto-appended port 11434. New URL: ${cleaned}`);
+    }
+    
+    // Final validation - must be valid URL
+    try {
+        new URL(cleaned);
+    } catch {
+        console.error(`Invalid URL generated: ${cleaned}, resetting to default`);
+        cleaned = 'http://127.0.0.1:11434';
     }
     
     OLLAMA_BASE_URL = cleaned;
     localStorage.setItem('endo_ollama_url', OLLAMA_BASE_URL);
+    console.log(`[Ollama] URL set to: ${OLLAMA_BASE_URL}`);
 };
 
 export const getOllamaUrl = () => OLLAMA_BASE_URL;
+
+// Test connection - useful for debugging
+export const testOllamaConnection = async (): Promise<{success: boolean, message: string}> => {
+    try {
+        const response = await fetch(`${OLLAMA_BASE_URL}/api/tags`, {
+            method: 'GET',
+            headers: { 'Content-Type': 'application/json' },
+        });
+        
+        if (response.ok) {
+            const data = await response.json();
+            return {
+                success: true,
+                message: `✅ Connected to Ollama at ${OLLAMA_BASE_URL}. Models: ${data.models?.map((m: any) => m.name).join(', ') || 'None'}`
+            };
+        } else {
+            return {
+                success: false,
+                message: `❌ Ollama responded with error: ${response.status} ${response.statusText}`
+            };
+        }
+    } catch (error: any) {
+        return {
+            success: false,
+            message: `❌ Cannot connect to Ollama at ${OLLAMA_BASE_URL}. Error: ${error.message}. Make sure Ollama is running ("ollama serve").`
+        };
+    }
+};
 
 // --- CORE OLLAMA FUNCTIONS ---
 
@@ -33,20 +77,15 @@ export const getOllamaUrl = () => OLLAMA_BASE_URL;
 async function queryOllama(prompt: string, system: string = "", jsonMode: boolean = false): Promise<string> {
     const url = `${OLLAMA_BASE_URL}/api/generate`;
     
+    console.log(`[Ollama] POST ${url}`);
+    console.log(`[Ollama] Model: ${MODEL}, System: ${system ? "Yes" : "No"}, JSON: ${jsonMode}`);
+
     try {
-        const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 8000); // 8-second timeout
-
-        console.log(`[Ollama] Sending request to ${url} (Model: ${MODEL})`);
-
         const response = await fetch(url, {
             method: 'POST',
             headers: { 
-                'Content-Type': 'application/json',
-                'ngrok-skip-browser-warning': 'true'
+                'Content-Type': 'application/json'
             },
-            mode: 'cors',
-            credentials: 'omit',
             body: JSON.stringify({
                 model: MODEL,
                 prompt: prompt,
@@ -58,28 +97,32 @@ async function queryOllama(prompt: string, system: string = "", jsonMode: boolea
                     num_ctx: 8192
                 }
             }),
-            signal: controller.signal
         });
 
-        clearTimeout(timeoutId);
-
         if (!response.ok) {
-            throw new Error(`Ollama API Error: ${response.status} ${response.statusText}`);
+            const errorText = await response.text();
+            console.error(`❌ Ollama Error ${response.status}:`, errorText);
+            throw new Error(`Ollama Error ${response.status}: ${response.statusText}`);
         }
         
         const data = await response.json();
+        console.log(`[Ollama] Response received (${data.response?.length || 0} chars)`);
         return data.response?.trim() || '';
     } catch (error: any) {
-        console.error('Ollama connection failed:', error);
-        throw new Error('LOCAL AI ERROR — Ollama not running or blocked. Start "ollama serve" and ensure port 11434 is open.');
+        console.error('❌ Ollama connection failed:', error);
+        if (error.name === 'TypeError' && error.message.includes('fetch')) {
+            throw new Error(`Cannot connect to Ollama at ${OLLAMA_BASE_URL}. Make sure: 1) Ollama is running ("ollama serve"), 2) No firewall blocking port 11434`);
+        }
+        throw error;
     }
 }
 
 // Chat Stream (/api/chat – better for conversation history)
 async function* streamOllamaChat(messages: {role: string, content: string}[], system?: string): AsyncGenerator<string, void, unknown> {
     const url = `${OLLAMA_BASE_URL}/api/chat`;
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 8000);
+    
+    console.log(`[Ollama] Streaming to ${url}`);
+    console.log(`[Ollama] Messages count: ${messages.length}`);
 
     try {
         const payloadMessages = system ? [{ role: 'system', content: system }, ...messages] : messages;
@@ -87,11 +130,8 @@ async function* streamOllamaChat(messages: {role: string, content: string}[], sy
         const response = await fetch(url, {
             method: 'POST',
             headers: { 
-                'Content-Type': 'application/json',
-                'ngrok-skip-browser-warning': 'true'
+                'Content-Type': 'application/json'
             },
-            mode: 'cors',
-            credentials: 'omit',
             body: JSON.stringify({
                 model: MODEL,
                 messages: payloadMessages,
@@ -101,45 +141,56 @@ async function* streamOllamaChat(messages: {role: string, content: string}[], sy
                     num_ctx: 8192
                 }
             }),
-            signal: controller.signal
         });
 
-        clearTimeout(timeoutId);
-
         if (!response.ok) {
-            throw new Error(`Ollama API Error: ${response.status}`);
+            const errorText = await response.text();
+            console.error(`❌ Ollama Stream Error ${response.status}:`, errorText);
+            yield `[ERROR] Ollama returned ${response.status}: ${errorText}`;
+            return;
         }
 
         if (!response.body) {
-            throw new Error('No response body');
+            console.error('❌ No response body from Ollama');
+            yield '[ERROR] No response from Ollama';
+            return;
         }
 
         const reader = response.body.getReader();
-        const decoder = new TextDecoder();
+        const decoder = new TextDecoder('utf-8');
+        let buffer = '';
 
         while (true) {
             const { done, value } = await reader.read();
-            if (done) break;
+            if (done) {
+                console.log('[Ollama] Stream completed');
+                break;
+            }
             
-            const chunk = decoder.decode(value, { stream: true });
-            const lines = chunk.split('\n');
+            buffer += decoder.decode(value, { stream: true });
+            const lines = buffer.split('\n');
+            buffer = lines.pop() || '';
             
             for (const line of lines) {
                 if (!line.trim()) continue;
+                
                 try {
                     const json = JSON.parse(line);
                     if (json.message?.content) {
                         yield json.message.content;
                     }
-                    if (json.done) return;
-                } catch {
-                    // Ignore malformed lines
+                    if (json.done) {
+                        console.log('[Ollama] Stream done flag received');
+                        return;
+                    }
+                } catch (parseError) {
+                    console.warn('[Ollama] Failed to parse JSON:', line.substring(0, 100));
                 }
             }
         }
     } catch (error: any) {
-        console.error('Ollama stream error:', error);
-        yield '[ERROR] Local AI offline. Start Ollama with "ollama serve".';
+        console.error('❌ Ollama stream fatal error:', error);
+        yield `[ERROR] ${error.message}`;
     }
 }
 
@@ -159,6 +210,7 @@ const cleanJson = (text: string): string => {
     } else if (firstBracket !== -1 && lastBracket !== -1) {
         cleaned = cleaned.substring(firstBracket, lastBracket + 1);
     }
+    
     return cleaned.trim();
 };
 
@@ -173,9 +225,9 @@ export async function* streamSLASResponse(
 ): AsyncGenerator<string, void, unknown> {
     
     const systemPrompt = `You are SLAS (Smart Leadership Assistant System) for the Ethiopian National Defence Force. 
-    Current Context: ${context}. 
-    User Language: ${language}. 
-    Be tactical, concise, and authoritative. Provide military-grade analysis.`;
+Current Context: ${context}. 
+User Language: ${language}. 
+Be tactical, concise, and authoritative. Provide military-grade analysis.`;
 
     const ollamaMessages = history.map(h => ({
         role: h.role === 'model' ? 'assistant' : 'user',
@@ -188,6 +240,9 @@ export async function* streamSLASResponse(
     }
     ollamaMessages.push({ role: 'user', content: currentContent });
 
+    console.log(`[SLAS] Starting stream with ${ollamaMessages.length} total messages`);
+    console.log(`[SLAS] Context: ${context.substring(0, 100)}...`);
+    
     yield* streamOllamaChat(ollamaMessages, systemPrompt);
 }
 
