@@ -82,7 +82,8 @@ const SLASAssistant: React.FC<SLASAssistantProps> = ({ currentView }) => {
   const handleSend = async (customText?: string) => {
     const textToSend = customText || input;
     const imageToSend = capturedImage;
-    
+    const docContext = await queryDocument(textToSend);
+    const enhancedPrompt = `${textToSend}\nFrom docs: ${docContext}`;
     if ((!textToSend.trim() && !imageToSend) || loading) return;
     
     // Display message
@@ -136,7 +137,7 @@ const SLASAssistant: React.FC<SLASAssistantProps> = ({ currentView }) => {
               <div className="flex items-center space-x-3">
                   <span className="text-[10px] text-purple-400 font-mono flex items-center">
                       <div className="w-2 h-2 bg-purple-500 rounded-full mr-1 animate-pulse"></div>
-                      GEMINI 3 PRO
+                      WALIA AI
                   </span>
                   <button onClick={() => { setIsOpen(false); }} className="text-gray-400 hover:text-white p-2">
                       <ChevronDown size={24} className="md:hidden" />
@@ -248,7 +249,7 @@ const SLASAssistant: React.FC<SLASAssistantProps> = ({ currentView }) => {
             >
                 <div className="relative flex items-center">
                     <Bot size={28} className={loading ? "animate-spin" : ""} />
-                    <span className="hidden md:inline font-semibold pl-2 font-display tracking-wide">SLAS AI</span>
+                    <span className="hidden md:inline font-semibold pl-2 font-display tracking-wide">WALIA AI</span>
                 </div>
             </button>
         )}
