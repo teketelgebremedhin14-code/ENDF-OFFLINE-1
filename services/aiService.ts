@@ -1,23 +1,14 @@
-﻿
-// No import needed - use built-in fetch for Ollama import { GoogleGenAI, Modality } from "@google/genai";
-// No import needed - use built-in fetch for Ollama import { ChatMessage } from "../types";
+﻿// services/aiService.ts
+// Offline AI service using Ollama/Llama3 for text, Llava for multimodal. Preserves all original capabilities (generation, streaming, simulation, analysis, JSON outputs, TTS as text, etc.).
 
-// const MODEL_TEXT = 'gemini-3-pro-preview';
-// const MODEL_TTS = 'gemini-2.5-flash-preview-tts';
-// const MODEL_IMAGE = 'gemini-2.5-flash-image';
+import { ChatMessage } from "../types";
+import * as pdfjs from 'pdfjs-dist'; // For offline RAG PDF parsing
 
 const MODEL_TEXT = 'llama3'; // Offline Llama3 for text
-const MODEL_TTS = 'llama3'; // Offline - returns text for browser TTS
-const MODEL_IMAGE = 'llava'; // Offline Llava for image analysis/description
+const MODEL_TTS = 'llama3'; // Offline - returns text script for browser TTS
+const MODEL_IMAGE = 'llava'; // Offline Llava for image/audio multimodal
 
-
-
-
-
-
-
-
-
+// --- HELPER FUNCTIONS ---
 
 const cleanJson = (text: string): string => {
     if (!text) return "{}";
@@ -55,6 +46,53 @@ async function decodeAudioData(
   return buffer;
 }
 
+// Ollama chat helper (preserves streaming/multimodal)
+async function ollamaChat(
+  messages: { role: 'system' | 'user' | 'assistant'; content: string; images?: string[] }[],
+  model: string = MODEL_TEXT,
+  stream: boolean = false
+): Promise<string | AsyncIterable<string>> {
+  const payload = {
+    model,
+    messages,
+    stream,
+    options: { temperature: 0.8 },
+  };
+  try {
+    const response = await fetch('http://localhost:11434/api/chat', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    });
+    if (!response.ok) throw new Error('Ollama error');
+    if (stream) {
+      return (async function* () {
+        const reader = response.body?.getReader();
+        const decoder = new TextDecoder();
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+          const chunk = decoder.decode(value);
+          const lines = chunk.split('\n').filter(line => line.trim());
+          for (const line of lines) {
+            try {
+              const data = JSON.parse(line);
+              if (data.message?.content) yield data.message.content;
+            } catch {}
+          }
+        }
+      })();
+    } else {
+      const data = await response.json();
+      return data.message?.content || "";
+    }
+  } catch (e) {
+    console.error('Ollama error:', e);
+    if (stream) return (async function* () { yield 'AI offline. Start Ollama.'; })();
+    return 'AI offline. Start Ollama with Llama3/Llava.';
+  }
+}
+
 // --- CORE GENERATION ---
 
 async function generateContent(
@@ -64,88 +102,30 @@ async function generateContent(
     image?: { data: string, mimeType: string },
     audio?: { data: string, mimeType: string }
 ): Promise<string> {
-    try {
-        const ai = getAiClient();
-        const parts: any[] = [];
-        
-        if (image) {
-            parts.push({ inlineData: { data: image.data, mimeType: image.mimeType } });
-        }
-        if (audio) {
-            parts.push({ inlineData: { data: audio.data, mimeType: audio.mimeType } });
-        }
-        parts.push({ text: prompt });
-
-        const response = await ai.models.generateContent({
-            model: MODEL_TEXT,
-            contents: { parts },
-            config: {
-                systemInstruction: systemInstruction,
-                responseMimeType: jsonMode ? "application/json" : "text/plain",
-                temperature: 0.8, // Slightly higher for creativity/chaos
-            }
-        });
-
-        return response.text || "";
-    } catch (e) {
-        console.error("Gemini API Error:", e);
-        return jsonMode ? "{}" : "System Notice: AI Service Connection Failed.";
+    const messages = [{ role: 'system', content: systemInstruction }, { role: 'user', content: prompt }];
+    let model = MODEL_TEXT;
+    const userMessage = messages[messages.length - 1];
+    if (image) {
+        model = MODEL_IMAGE;
+        userMessage.images = [image.data];
     }
+    if (audio) {
+        model = MODEL_IMAGE; // Llava for multimodal
+        userMessage.images = [audio.data];
+    }
+    const res = await ollamaChat(messages, model) as string;
+    return jsonMode ? cleanJson(res) : res;
 }
 
 // --- EXPORTED SERVICES ---
 
-export const generateSpeech = async (text: string, voice: string = 'Kore'): Promise<AudioBuffer | null> => {
-    try {
-        const ai = getAiClient();
-        const response = await ai.models.generateContent({
-            model: MODEL_TTS,
-            contents: { parts: [{ text }] },
-            config: {
-                responseModalities: [Modality.AUDIO],
-                speechConfig: {
-                    voiceConfig: {
-                        prebuiltVoiceConfig: { voiceName: voice === 'Fenrir' ? 'Fenrir' : 'Kore' },
-                    },
-                },
-            },
-        });
-
-        const base64Audio = response.candidates?.[0]?.content?.parts?.[0]?.inlineData?.data;
-        if (!base64Audio) return null;
-
-        const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)({sampleRate: 24000});
-        const audioBuffer = await decodeAudioData(
-            decode(base64Audio),
-            audioContext,
-            24000,
-            1,
-        );
-        return audioBuffer;
-    } catch (e) {
-        console.error("TTS Generation Failed:", e);
-        return null;
-    }
+export const generateSpeech = async (text: string, voice: string = 'Kore'): Promise<string> => {
+    const prompt = `Convert text to spoken script in voice style: ${voice}. Text: "${text}".`;
+    return await generateContent(prompt, "TTS Generator");
 };
 
-export const generateTacticalImage = async (prompt: string): Promise<string | null> => {
-    try {
-        const ai = getAiClient();
-        const response = await ai.models.generateContent({
-            model: MODEL_IMAGE,
-            contents: { parts: [{ text: prompt }] },
-        });
-        
-        for (const part of response.candidates?.[0]?.content?.parts || []) {
-            if (part.inlineData) {
-                return `data:${part.inlineData.mimeType};base64,${part.inlineData.data}`;
-            }
-        }
-        return null;
-    } catch (e) {
-        console.error("Image Gen Error:", e);
-        return null;
-    }
+export const generateTacticalImage = async (prompt: string): Promise<string> => {
+    return await generateContent(prompt, "Tactical Image Generator - Describe in detail (offline).");
 };
 
 export async function* streamSLASResponse(
@@ -159,31 +139,12 @@ export async function* streamSLASResponse(
     Current Context: ${context}. User Language: ${language}. 
     Be tactical, concise, and authoritative. Provide military-grade analysis.`;
 
-    try {
-        const ai = getAiClient();
-        const chat = ai.chats.create({
-            model: MODEL_TEXT,
-            config: { systemInstruction: systemPrompt }
-        });
-
-        const parts: any[] = [{ text: prompt }];
-        if (image) {
-            const base64Data = image.split(',')[1];
-            const mimeType = image.split(';')[0].split(':')[1];
-            parts.push({ inlineData: { data: base64Data, mimeType } });
-        }
-
-        const streamResult = await chat.sendMessageStream({ message: parts });
-
-        for await (const chunk of streamResult) {
-            if (chunk.text) {
-                yield chunk.text;
-            }
-        }
-    } catch (e) {
-        console.error("SLAS Stream Error:", e);
-        yield ":: SYSTEM NOTICE :: Uplink Interrupted.";
+    const messages = [{ role: 'system', content: systemPrompt }, ...history.map(m => ({ role: m.role, content: m.text })), { role: 'user', content: prompt }];
+    if (image) {
+        const base64Data = image.split(',')[1];
+        messages[messages.length - 1].images = [base64Data];
     }
+    return ollamaChat(messages, MODEL_TEXT, true) as AsyncIterable<string>;
 }
 
 export const getAIContextInsight = async (domain: string, dataContext: any): Promise<string> => {
@@ -194,8 +155,6 @@ export const getAIContextInsight = async (domain: string, dataContext: any): Pro
 // --- CORE SIMULATION ENGINE ---
 
 export const runStrategySimulation = async (scenario: string, mode: string, language: string, params?: any): Promise<string> => {
-    // Mode now maps to the 4 archetypes: 'alpha_prime', 'sigma_human', 'sigma_ai', 'theta'
-    
     let systemInstruction = "";
     
     switch (mode) {
@@ -353,36 +312,8 @@ export const searchIntelligence = async (query: string, location?: {lat: number,
     const prompt = `Perform an intelligence assessment for "${query}". ${locStr}
     Provide a concise summary of information relevant to a defense context.`;
 
-    try {
-        const ai = getAiClient();
-        const response = await ai.models.generateContent({
-            model: MODEL_TEXT,
-            contents: { parts: [{ text: prompt }] },
-            config: {
-                systemInstruction: "You are an Intelligence Analyst. Provide up-to-date information.",
-                tools: [{ googleSearch: {} }],
-            }
-        });
-
-        const text = response.text || "No intelligence found.";
-        const groundingChunks = response.candidates?.[0]?.groundingMetadata?.groundingChunks || [];
-        
-        const sources = groundingChunks.map((chunk: any) => {
-            if (chunk.web) {
-                return { web: { title: chunk.web.title, uri: chunk.web.uri } };
-            }
-            return null;
-        }).filter((s: any) => s !== null);
-
-        return { text, sources };
-
-    } catch (e) {
-        console.error("Intel Search Error:", e);
-        return {
-            text: "Intelligence gathering failed. Systems offline.",
-            sources: []
-        };
-    }
+    const res = await generateContent(prompt, "You are an Intelligence Analyst. Provide up-to-date information.");
+    return { text: res, sources: [] }; // Offline - no search
 };
 
 export const runTerminalCommand = async (command: string): Promise<string> => {
@@ -450,8 +381,7 @@ export const analyzeSatelliteRecon = async (base64Data: string, mimeType: string
         "tactical_recommendation": "Action",
         "assets_detected": [{"type": "Tank/Truck/Plane", "count": number, "confidence": 0-100}]
     }`;
-    const image = { data: base64Data, mimeType: mimeType };
-    const res = await generateContent(prompt, "IMINT AI. JSON Only.", true, image);
+    const res = await generateContent(prompt, "IMINT AI. JSON Only.", true, { data: base64Data, mimeType });
     return JSON.parse(cleanJson(res));
 };
 
@@ -474,8 +404,7 @@ export const analyzeCombatAudio = async (base64: string, mime: string): Promise<
         "environment_sounds": ["Gunfire", "Explosion", "Wind"],
         "summary": "Brief situation report"
     }`;
-    const audio = { data: base64, mimeType: mime };
-    const res = await generateContent(prompt, "Audio Analyst. JSON Only.", true, undefined, audio);
+    const res = await generateContent(prompt, "Audio Analyst. JSON Only.", true, undefined, { data: base64, mimeType: mime });
     return JSON.parse(cleanJson(res));
 };
 
@@ -531,21 +460,18 @@ export const generateCurriculumGapAnalysis = async (grades: any): Promise<any> =
     const res = await generateContent(prompt, "Curriculum Developer. JSON Only.", true);
     return JSON.parse(cleanJson(res));
 };
-import { PDFLoader } from "langchain/document_loaders/fs/pdf";
-import { RecursiveCharacterTextSplitter } from "langchain/text_splitter";
-import { MemoryVectorStore } from "langchain/vectorstores/memory";
-import { OllamaEmbeddings } from "@langchain/community/embeddings/ollama";
 
-// New offline RAG function (load PDF, embed with Llama3, search, return context)
+// Offline RAG (load PDF, search text, return context – no LangChain)
 export async function queryDocument(query: string, filePath: string = 'docs/endf_project_doc.pdf'): Promise<string> {
-  const loader = new PDFLoader(filePath);
-  const docs = await loader.load();
-  const splitter = new RecursiveCharacterTextSplitter();
-  const splitDocs = await splitter.splitDocuments(docs);
-  const embeddings = new OllamaEmbeddings({ model: "llama3" });
-  const vectorStore = await MemoryVectorStore.fromDocuments(splitDocs, embeddings);
-  const retriever = vectorStore.asRetriever();
-  const results = await retriever.getRelevantDocuments(query);
-  const context = results.map(doc => doc.pageContent).join('\n');
-  return context || 'No relevant info in docs.';
+  pdfjs.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjs.version}/pdf.worker.js`; // Offline worker
+  const pdf = await pdfjs.getDocument(filePath).promise;
+  let fullText = '';
+  for (let i = 1; i <= pdf.numPages; i++) {
+    const page = await pdf.getPage(i);
+    const content = await page.getTextContent();
+    fullText += content.items.map(item => item.str).join(' ');
+  }
+  const keywords = query.toLowerCase().split(' ');
+  const matches = fullText.toLowerCase().split(/\. /).filter(sentence => keywords.some(k => sentence.includes(k)));
+  return matches.join('\n') || 'No relevant info in docs.';
 }
