@@ -4,7 +4,7 @@ import { Shield, Map, Activity, Users, Settings, Target, Layers, Truck, Zap, Glo
 import MetricCard from '../components/MetricCard';
 import { useLanguage } from '../contexts/LanguageContext';
 import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, CartesianGrid, RadarChart, PolarGrid, PolarAngleAxis, Radar, PieChart, Pie, Cell } from 'recharts';
-import { analyzeCombatAudio } from '../services/ollamaService';
+import { analyzeCombatAudio } from '../services/aiService';
 
 // Helper to safely render AI text that might be returned as an object
 const SafeRender = ({ content }: { content: any }) => {
@@ -38,20 +38,20 @@ const OrgNode: React.FC<OrgNodeProps> = ({ label, role, level, status, children,
     };
 
     return (
-        <div className={`ml-4 border-l-2 ${getLevelColor(level)} pl-4 py-2 relative animate-in slide-in-from-left-2`}>
+        <div className={`ml-4 border-l-2 ${getLevelColor(level)} pl-4 py-1 relative animate-in slide-in-from-left-2`}>
             <div 
-                className="flex items-center cursor-pointer hover:bg-military-800 p-2 rounded transition-colors group"
+                className="flex items-center cursor-pointer hover:bg-military-800 p-1.5 rounded transition-colors group"
                 onClick={() => setIsOpen(!isOpen)}
             >
                 {children ? (
-                    isOpen ? <ChevronDown size={14} className="mr-2 text-gray-500" /> : <ChevronRight size={14} className="mr-2 text-gray-500" />
+                    isOpen ? <ChevronDown size={12} className="mr-2 text-gray-500" /> : <ChevronRight size={12} className="mr-2 text-gray-500" />
                 ) : <div className="w-5 mr-2"></div>}
                 
                 <div className="flex-1 min-h-0">
                     <div className="flex flex-wrap justify-between items-center gap-2">
                         <div className="flex items-center min-w-0">
                             {level && <span className="text-[9px] uppercase font-bold text-gray-500 mr-2 bg-black/30 px-1 rounded">{level}</span>}
-                            <div className="text-sm font-bold text-white group-hover:text-green-400 truncate">{label}</div>
+                            <div className="text-xs font-bold text-white group-hover:text-green-400 truncate">{label}</div>
                         </div>
                         {status && (
                             <span className={`text-[9px] px-2 py-0.5 rounded font-mono uppercase whitespace-nowrap ${
@@ -61,7 +61,7 @@ const OrgNode: React.FC<OrgNodeProps> = ({ label, role, level, status, children,
                             }`}>{status}</span>
                         )}
                     </div>
-                    <div className="text-[10px] text-gray-400 truncate flex items-center">
+                    <div className="text-[9px] text-gray-400 truncate flex items-center">
                         <User size={10} className="mr-1 inline" /> {role}
                     </div>
                 </div>
@@ -83,7 +83,7 @@ const GroundForcesView: React.FC<GroundForcesViewProps> = ({ onBack }) => {
     const { t } = useLanguage();
     const [activeTab, setActiveTab] = useState<'strat_org' | 'capabilities' | 'ops_personnel' | 'future_ind' | 'sentinel'>('strat_org');
 
-    // II. Inventory Data (Realistic estimates based on public defense databases)
+    // II. Inventory Data
     const armorStats = [
         { name: 'T-72/B1', count: 280, status: t('status_active') }, 
         { name: 'T-62', count: 120, status: t('status_reserve') },
@@ -159,49 +159,49 @@ const GroundForcesView: React.FC<GroundForcesViewProps> = ({ onBack }) => {
     };
 
     return (
-        <div className="space-y-6 animate-in fade-in duration-500 flex flex-col h-[calc(100vh-140px)]">
+        <div className="space-y-6 animate-in fade-in duration-500 flex flex-col h-full">
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-2 flex-shrink-0">
                 <div>
                     <h2 className="text-2xl font-bold text-white tracking-tight font-display">{t('ground_title')}</h2>
-                    <p className="text-gray-400 text-sm font-sans">{t('ground_subtitle')} • Field Marshal Birhanu Jula</p>
+                    <p className="text-gray-400 text-xs font-sans">{t('ground_subtitle')} • Field Marshal Birhanu Jula</p>
                 </div>
                 
                 <div className="mt-4 md:mt-0 flex flex-wrap gap-2 items-center">
                     <div className="bg-military-800 p-1 rounded-lg border border-military-700 flex flex-wrap gap-1">
                         <button 
                             onClick={() => setActiveTab('strat_org')}
-                            className={`px-4 py-1.5 text-xs font-bold rounded flex items-center transition-all ${activeTab === 'strat_org' ? 'bg-green-600 text-white shadow' : 'text-gray-400 hover:text-white'}`}
+                            className={`px-4 py-1.5 text-[10px] font-bold rounded flex items-center transition-all ${activeTab === 'strat_org' ? 'bg-green-600 text-white shadow' : 'text-gray-400 hover:text-white'}`}
                         >
-                            <Map size={14} className="mr-2"/> I. STRAT & ORG
+                            <Map size={12} className="mr-1"/> I. STRAT
                         </button>
                         <button 
                             onClick={() => setActiveTab('capabilities')}
-                            className={`px-4 py-1.5 text-xs font-bold rounded flex items-center transition-all ${activeTab === 'capabilities' ? 'bg-blue-600 text-white shadow' : 'text-gray-400 hover:text-white'}`}
+                            className={`px-4 py-1.5 text-[10px] font-bold rounded flex items-center transition-all ${activeTab === 'capabilities' ? 'bg-blue-600 text-white shadow' : 'text-gray-400 hover:text-white'}`}
                         >
-                            <Shield size={14} className="mr-2"/> II. CAPABILITY
+                            <Shield size={12} className="mr-1"/> II. CAPS
                         </button>
                         <button 
                             onClick={() => setActiveTab('ops_personnel')}
-                            className={`px-4 py-1.5 text-xs font-bold rounded flex items-center transition-all ${activeTab === 'ops_personnel' ? 'bg-yellow-600 text-white shadow' : 'text-gray-400 hover:text-white'}`}
+                            className={`px-4 py-1.5 text-[10px] font-bold rounded flex items-center transition-all ${activeTab === 'ops_personnel' ? 'bg-yellow-600 text-white shadow' : 'text-gray-400 hover:text-white'}`}
                         >
-                            <Users size={14} className="mr-2"/> III. OPS & PERS
+                            <Users size={12} className="mr-1"/> III. OPS
                         </button>
                         <button 
                             onClick={() => setActiveTab('future_ind')}
-                            className={`px-4 py-1.5 text-xs font-bold rounded flex items-center transition-all ${activeTab === 'future_ind' ? 'bg-purple-600 text-white shadow' : 'text-gray-400 hover:text-white'}`}
+                            className={`px-4 py-1.5 text-[10px] font-bold rounded flex items-center transition-all ${activeTab === 'future_ind' ? 'bg-purple-600 text-white shadow' : 'text-gray-400 hover:text-white'}`}
                         >
-                            <Settings size={14} className="mr-2"/> IV. FUT & IND
+                            <Settings size={12} className="mr-1"/> IV. FUT
                         </button>
                         <button 
                             onClick={() => setActiveTab('sentinel')}
-                            className={`px-4 py-1.5 text-xs font-bold rounded flex items-center transition-all ${activeTab === 'sentinel' ? 'bg-red-600 text-white shadow' : 'text-gray-400 hover:text-white'}`}
+                            className={`px-4 py-1.5 text-[10px] font-bold rounded flex items-center transition-all ${activeTab === 'sentinel' ? 'bg-red-600 text-white shadow' : 'text-gray-400 hover:text-white'}`}
                         >
-                            <Radio size={14} className="mr-2"/> AI SENTINEL
+                            <Radio size={12} className="mr-1"/> SENTINEL
                         </button>
                     </div>
                     {onBack && (
                         <button onClick={onBack} className="p-2 text-gray-400 hover:text-white hover:bg-military-700 rounded transition-colors" title="Exit / Back">
-                            <X size={20} />
+                            <X size={16} />
                         </button>
                     )}
                 </div>
@@ -248,8 +248,8 @@ const GroundForcesView: React.FC<GroundForcesViewProps> = ({ onBack }) => {
                         </div>
 
                         {/* Order of Battle Tree */}
-                        <div className="bg-military-800 rounded-lg p-6 border border-military-700 flex flex-col h-auto">
-                            <div className="flex justify-between items-center mb-4">
+                        <div className="bg-military-800 rounded-lg p-6 border border-military-700 flex flex-col h-full overflow-hidden">
+                            <div className="flex justify-between items-center mb-4 flex-shrink-0">
                                 <h3 className="font-bold text-white text-sm uppercase flex items-center">
                                     <Layers className="mr-2 text-green-500" size={16}/> Order of Battle
                                 </h3>
@@ -257,7 +257,7 @@ const GroundForcesView: React.FC<GroundForcesViewProps> = ({ onBack }) => {
                                     <Edit3 size={10} className="mr-1"/> Edit Structure
                                 </button>
                             </div>
-                            <div className="flex-1 overflow-y-auto pr-2 max-h-[600px]">
+                            <div className="flex-1 overflow-y-auto pr-2 custom-scrollbar">
                                 <OrgNode label="Ground Forces Command" role="FM Birhanu Jula" level="Command" defaultOpen={true} status="Active">
                                     <OrgNode label={t('reg_north')} role="Lt. Gen. [Redacted]" level="Command" status="Active">
                                         <OrgNode label="4th Mechanized Division" role="Brig. Gen. [Redacted]" level="Division" status="Active" />
@@ -276,28 +276,28 @@ const GroundForcesView: React.FC<GroundForcesViewProps> = ({ onBack }) => {
                 {/* TAB 2: CAPABILITIES */}
                 {activeTab === 'capabilities' && (
                     <div className="h-full grid grid-cols-1 lg:grid-cols-2 gap-6 overflow-y-auto lg:overflow-hidden">
-                        <div className="bg-military-800 rounded-lg p-6 border border-military-700 h-96 lg:h-auto">
-                            <h3 className="font-semibold text-lg text-white mb-6 flex items-center">
+                        <div className="bg-military-800 rounded-lg p-6 border border-military-700 flex flex-col h-full">
+                            <h3 className="font-semibold text-lg text-white mb-6 flex items-center flex-shrink-0">
                                 <Shield className="mr-2 text-blue-500" size={20}/> Armor & Mechanized Inventory
                             </h3>
-                            <div className="h-64 w-full">
+                            <div className="flex-1 w-full min-h-[200px]">
                                 <ResponsiveContainer width="100%" height="100%">
                                     <BarChart data={armorStats} layout="vertical">
                                         <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="#334155" />
                                         <XAxis type="number" stroke="#94a3b8" fontSize={10} />
                                         <YAxis dataKey="name" type="category" width={80} stroke="#94a3b8" fontSize={11} />
-                                        <Tooltip contentStyle={{ backgroundColor: '#1e293b', border: '1px solid #475569' }} cursor={{fill: 'transparent'}} />
+                                        <Tooltip contentStyle={{ backgroundColor: '#1e293b', border: '1px solid #475569', fontSize: '11px' }} cursor={{fill: 'transparent'}} />
                                         <Bar dataKey="count" fill="#3b82f6" radius={[0, 4, 4, 0]} barSize={20} />
                                     </BarChart>
                                 </ResponsiveContainer>
                             </div>
-                            <div className="mt-4 p-3 bg-military-900 rounded border border-military-600 text-xs text-gray-400">
-                                <strong>Modernization Status:</strong> T-72 fleet currently undergoing upgrades at Bishoftu. Shift towards wheel-based IFVs for mobility.
+                            <div className="mt-4 p-3 bg-military-900 rounded border border-military-600 text-xs text-gray-400 flex-shrink-0">
+                                <strong>Modernization:</strong> T-72 fleet upgrading at Bishoftu. Wheel-based IFVs prioritizing mobility.
                             </div>
                         </div>
 
-                        <div className="space-y-6">
-                            <div className="bg-military-800 rounded-lg p-6 border border-military-700">
+                        <div className="space-y-6 flex flex-col h-full overflow-y-auto">
+                            <div className="bg-military-800 rounded-lg p-6 border border-military-700 flex-1">
                                 <h3 className="font-semibold text-lg text-white mb-4 flex items-center">
                                     <Zap className="mr-2 text-yellow-500" size={20}/> Key Enablers
                                 </h3>
@@ -305,7 +305,7 @@ const GroundForcesView: React.FC<GroundForcesViewProps> = ({ onBack }) => {
                                     <div className="flex justify-between items-center p-3 bg-military-900 rounded border border-military-600">
                                         <div>
                                             <h4 className="text-sm font-bold text-white">Artillery</h4>
-                                            <p className="text-xs text-gray-400">BM-21 Grad / 122mm / 155mm</p>
+                                            <p className="text-xs text-gray-400">BM-21 Grad / 122mm</p>
                                         </div>
                                         <span className="text-xs font-bold text-green-500">High Readiness</span>
                                     </div>
@@ -319,7 +319,7 @@ const GroundForcesView: React.FC<GroundForcesViewProps> = ({ onBack }) => {
                                     <div className="flex justify-between items-center p-3 bg-military-900 rounded border border-military-600">
                                         <div>
                                             <h4 className="text-sm font-bold text-white">UAV Integration</h4>
-                                            <p className="text-xs text-gray-400">TB2 / Wing Loong / Akinci</p>
+                                            <p className="text-xs text-gray-400">TB2 / Wing Loong</p>
                                         </div>
                                         <span className="text-xs font-bold text-purple-500">Rapid Expansion</span>
                                     </div>
@@ -332,23 +332,23 @@ const GroundForcesView: React.FC<GroundForcesViewProps> = ({ onBack }) => {
                 {/* TAB 3: OPS & PERSONNEL */}
                 {activeTab === 'ops_personnel' && (
                     <div className="h-full grid grid-cols-1 lg:grid-cols-2 gap-6 overflow-y-auto lg:overflow-hidden">
-                        <div className="bg-military-800 rounded-lg p-6 border border-military-700 flex flex-col h-96 lg:h-auto">
-                            <h3 className="font-semibold text-lg text-white mb-6 flex items-center">
+                        <div className="bg-military-800 rounded-lg p-6 border border-military-700 flex flex-col h-full">
+                            <h3 className="font-semibold text-lg text-white mb-6 flex items-center flex-shrink-0">
                                 <Activity className="mr-2 text-green-500" size={20}/> Readiness by Command
                             </h3>
-                            <div className="h-64 w-full">
+                            <div className="flex-1 w-full min-h-[200px]">
                                 <ResponsiveContainer width="100%" height="100%">
-                                    <RadarChart cx="50%" cy="50%" outerRadius="80%" data={readinessMetrics}>
+                                    <RadarChart cx="50%" cy="50%" outerRadius="70%" data={readinessMetrics}>
                                         <PolarGrid stroke="#334155" />
                                         <PolarAngleAxis dataKey="subject" tick={{ fill: '#94a3b8', fontSize: 11 }} />
                                         <Radar name="Status" dataKey="A" stroke="#22c55e" fill="#22c55e" fillOpacity={0.4} />
-                                        <Tooltip contentStyle={{ backgroundColor: '#1e293b', border: '1px solid #475569' }} />
+                                        <Tooltip contentStyle={{ backgroundColor: '#1e293b', border: '1px solid #475569', fontSize: '11px' }} />
                                     </RadarChart>
                                 </ResponsiveContainer>
                             </div>
                         </div>
 
-                        <div className="bg-military-800 rounded-lg p-6 border border-military-700">
+                        <div className="bg-military-800 rounded-lg p-6 border border-military-700 h-full overflow-y-auto">
                             <h3 className="font-semibold text-lg text-white mb-4 flex items-center">
                                 <Truck className="mr-2 text-yellow-500" size={20}/> Logistics & Sustainment
                             </h3>
@@ -369,7 +369,7 @@ const GroundForcesView: React.FC<GroundForcesViewProps> = ({ onBack }) => {
                 {/* TAB 4: FUTURE & INDUSTRY */}
                 {activeTab === 'future_ind' && (
                     <div className="h-full grid grid-cols-1 lg:grid-cols-2 gap-6 overflow-y-auto lg:overflow-hidden">
-                        <div className="bg-military-800 rounded-lg p-6 border border-military-700">
+                        <div className="bg-military-800 rounded-lg p-6 border border-military-700 h-full overflow-y-auto">
                             <h3 className="font-semibold text-lg text-white mb-6 flex items-center">
                                 <HardHat className="mr-2 text-orange-500" size={20}/> Defense Industrial Base (DEIC)
                             </h3>
@@ -389,7 +389,7 @@ const GroundForcesView: React.FC<GroundForcesViewProps> = ({ onBack }) => {
                             <p className="text-xs text-gray-400 mt-4 italic">Focus on self-reliance in munitions and vehicle maintenance to reduce import dependence.</p>
                         </div>
 
-                        <div className="bg-military-800 rounded-lg p-6 border border-military-700 flex flex-col">
+                        <div className="bg-military-800 rounded-lg p-6 border border-military-700 flex flex-col h-full overflow-y-auto">
                             <h3 className="font-semibold text-lg text-white mb-4 flex items-center">
                                 <TrendingUp className="mr-2 text-purple-500" size={20}/> Future Trajectory
                             </h3>
@@ -413,13 +413,13 @@ const GroundForcesView: React.FC<GroundForcesViewProps> = ({ onBack }) => {
 
                 {/* TAB 5: AI SENTINEL */}
                 {activeTab === 'sentinel' && (
-                    <div className="h-full flex flex-col items-center justify-center p-6 bg-military-800 rounded-lg border border-military-700 min-h-[400px] overflow-y-auto">
+                    <div className="h-full flex flex-col items-center justify-center p-6 bg-military-800 rounded-lg border border-military-700 overflow-y-auto">
                         <div className="max-w-2xl w-full text-center space-y-8">
                             <div>
                                 <h3 className="text-3xl font-bold text-white font-display mb-2 flex justify-center items-center">
                                     <Radio className="mr-3 text-red-500" size={32}/> AI COMMS SENTINEL
                                 </h3>
-                                <p className="text-gray-400">Real-time battlefield audio analysis. Detects stress, combat sounds, and tactical urgency.</p>
+                                <p className="text-gray-400 text-sm">Real-time battlefield audio analysis. Detects stress, combat sounds, and tactical urgency.</p>
                             </div>
 
                             <div className="relative">
@@ -432,13 +432,13 @@ const GroundForcesView: React.FC<GroundForcesViewProps> = ({ onBack }) => {
                                         <Mic size={64} className="text-gray-400" />
                                     </div>
                                 )}
-                                <div className="mt-4 font-mono text-sm text-gray-500">
+                                <div className="mt-4 font-mono text-xs text-gray-500">
                                     {isRecording ? "LISTENING..." : "CLICK TO RECORD COMMS"}
                                 </div>
                             </div>
 
                             {isAnalyzing && (
-                                <div className="flex items-center justify-center space-x-2 text-yellow-500 font-mono">
+                                <div className="flex items-center justify-center space-x-2 text-yellow-500 font-mono text-xs">
                                     <Activity className="animate-spin" size={16} /> 
                                     <span>ANALYZING WAVEFORM SIGNATURE...</span>
                                 </div>
@@ -458,7 +458,7 @@ const GroundForcesView: React.FC<GroundForcesViewProps> = ({ onBack }) => {
                                             <div className="text-xs text-gray-500 font-bold mb-1">DETECTED SOUNDS</div>
                                             <div className="flex flex-wrap gap-2">
                                                 {sentinelResult.environment_sounds?.map((s: string, i: number) => (
-                                                    <span key={i} className="text-xs bg-military-800 text-gray-300 px-2 py-1 rounded border border-gray-700"><SafeRender content={s} /></span>
+                                                    <span key={i} className="text-[10px] bg-military-800 text-gray-300 px-2 py-1 rounded border border-gray-700"><SafeRender content={s} /></span>
                                                 ))}
                                             </div>
                                         </div>
@@ -466,7 +466,7 @@ const GroundForcesView: React.FC<GroundForcesViewProps> = ({ onBack }) => {
                                             <div className="text-xs text-gray-500 font-bold mb-1">KEYWORDS</div>
                                             <div className="flex flex-wrap gap-2">
                                                 {sentinelResult.keywords_detected?.map((k: string, i: number) => (
-                                                    <span key={i} className="text-xs bg-blue-900/20 text-blue-300 px-2 py-1 rounded border border-blue-500/30"><SafeRender content={k} /></span>
+                                                    <span key={i} className="text-[10px] bg-blue-900/20 text-blue-300 px-2 py-1 rounded border border-blue-500/30"><SafeRender content={k} /></span>
                                                 ))}
                                             </div>
                                         </div>
@@ -474,7 +474,7 @@ const GroundForcesView: React.FC<GroundForcesViewProps> = ({ onBack }) => {
 
                                     <div className="bg-yellow-900/10 p-4 rounded border border-yellow-500/30">
                                         <h5 className="text-xs font-bold text-yellow-500 mb-2">SITUATION SUMMARY</h5>
-                                        <p className="text-sm text-gray-300 leading-relaxed font-mono"><SafeRender content={sentinelResult.summary} /></p>
+                                        <p className="text-xs text-gray-300 leading-relaxed font-mono"><SafeRender content={sentinelResult.summary} /></p>
                                     </div>
                                 </div>
                             )}

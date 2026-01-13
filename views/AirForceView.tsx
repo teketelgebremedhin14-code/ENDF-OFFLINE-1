@@ -54,12 +54,12 @@ const AirForceView: React.FC<AirForceViewProps> = ({ onBack }) => {
     ];
 
     return (
-        <div className="space-y-6 animate-in fade-in duration-500 flex flex-col h-[calc(100vh-140px)]">
+        <div className="space-y-6 animate-in fade-in duration-500 flex flex-col h-full">
             {/* Header with Strategic Context (I. Foundational & Strategic Role) */}
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-2 flex-shrink-0">
                 <div>
                     <h2 className="text-2xl font-bold text-white tracking-tight font-display">{t('air_title')}</h2>
-                    <p className="text-gray-400 text-sm font-sans">Cmdr: Lt. Gen. Yilma Merdasa • HQ: Bishoftu</p>
+                    <p className="text-gray-400 text-xs font-sans">Cmdr: Lt. Gen. Yilma Merdasa • HQ: Bishoftu</p>
                 </div>
                 
                 <div className="mt-4 md:mt-0 flex flex-wrap items-center gap-2">
@@ -68,25 +68,25 @@ const AirForceView: React.FC<AirForceViewProps> = ({ onBack }) => {
                             onClick={() => setActiveTab('overview')}
                             className={`px-4 py-1.5 text-xs font-bold rounded flex items-center transition-all ${activeTab === 'overview' ? 'bg-cyan-600 text-white shadow' : 'text-gray-400 hover:text-white'}`}
                         >
-                            <Map size={14} className="mr-2"/> STRAT & ORG
+                            <Map size={12} className="mr-1"/> STRAT
                         </button>
                         <button 
                             onClick={() => setActiveTab('inventory')}
                             className={`px-4 py-1.5 text-xs font-bold rounded flex items-center transition-all ${activeTab === 'inventory' ? 'bg-cyan-600 text-white shadow' : 'text-gray-400 hover:text-white'}`}
                         >
-                            <Plane size={14} className="mr-2"/> FLEET (CAPS)
+                            <Plane size={12} className="mr-1"/> FLEET
                         </button>
                         <button 
                             onClick={() => setActiveTab('ops')}
                             className={`px-4 py-1.5 text-xs font-bold rounded flex items-center transition-all ${activeTab === 'ops' ? 'bg-cyan-600 text-white shadow' : 'text-gray-400 hover:text-white'}`}
                         >
-                            <Activity size={14} className="mr-2"/> OPS & PERSONNEL
+                            <Activity size={12} className="mr-1"/> OPS
                         </button>
                         <button 
                             onClick={() => setActiveTab('future')}
                             className={`px-4 py-1.5 text-xs font-bold rounded flex items-center transition-all ${activeTab === 'future' ? 'bg-cyan-600 text-white shadow' : 'text-gray-400 hover:text-white'}`}
                         >
-                            <TrendingUp size={14} className="mr-2"/> FUTURE & ALLIANCES
+                            <TrendingUp size={12} className="mr-1"/> FUTURE
                         </button>
                     </div>
                     {onBack && (
@@ -114,7 +114,7 @@ const AirForceView: React.FC<AirForceViewProps> = ({ onBack }) => {
                 {activeTab === 'overview' && (
                     <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 h-full overflow-y-auto lg:overflow-hidden">
                         {/* I. Foundational Role - Doctrine */}
-                        <div className="bg-military-800 rounded-lg p-6 border border-military-700 h-96 lg:h-auto">
+                        <div className="bg-military-800 rounded-lg p-6 border border-military-700 h-auto lg:h-full">
                             <h3 className="font-semibold text-lg text-white mb-4 flex items-center">
                                 <Target className="mr-2 text-cyan-500" size={20} /> Foundational Role & Doctrine
                             </h3>
@@ -182,7 +182,7 @@ const AirForceView: React.FC<AirForceViewProps> = ({ onBack }) => {
                 {/* TAB 2: INVENTORY (CAPABILITIES) */}
                 {activeTab === 'inventory' && (
                     <div className="h-full grid grid-cols-1 lg:grid-cols-2 gap-6 overflow-y-auto lg:overflow-hidden">
-                        <div className="bg-military-800 rounded-lg p-6 border border-military-700 flex flex-col h-96 lg:h-auto">
+                        <div className="bg-military-800 rounded-lg p-6 border border-military-700 flex flex-col h-full min-h-[300px]">
                             <div className="flex justify-between items-center mb-6">
                                 <h3 className="font-semibold text-lg text-white flex items-center">
                                     <Plane className="mr-2 text-cyan-500" size={20} /> Aircraft Inventory (Estimate)
@@ -201,7 +201,7 @@ const AirForceView: React.FC<AirForceViewProps> = ({ onBack }) => {
                                         <XAxis type="number" stroke="#94a3b8" />
                                         <YAxis dataKey="name" type="category" width={80} stroke="#94a3b8" fontSize={11} />
                                         <Tooltip 
-                                            contentStyle={{ backgroundColor: '#1e293b', border: '1px solid #475569' }}
+                                            contentStyle={{ backgroundColor: '#1e293b', border: '1px solid #475569', fontSize: '11px' }}
                                             cursor={{fill: 'transparent'}}
                                         />
                                         <Bar dataKey="count" fill="#06b6d4" radius={[0, 4, 4, 0]} barSize={20} />
@@ -210,9 +210,9 @@ const AirForceView: React.FC<AirForceViewProps> = ({ onBack }) => {
                             </div>
                         </div>
 
-                        <div className="space-y-6">
+                        <div className="space-y-6 flex flex-col h-full overflow-y-auto">
                             <div className="bg-military-800 rounded-lg p-6 border border-military-700">
-                                <h3 className="font-semibold text-lg text-white mb-4">Key Platforms (Quality vs Quantity)</h3>
+                                <h3 className="font-semibold text-lg text-white mb-4">Key Platforms</h3>
                                 <div className="space-y-3">
                                     <div className="p-3 bg-military-900 rounded border border-cyan-900 flex justify-between items-center group hover:border-cyan-500 transition-colors">
                                         <div>
@@ -238,7 +238,7 @@ const AirForceView: React.FC<AirForceViewProps> = ({ onBack }) => {
                                 </div>
                             </div>
 
-                            <div className="bg-military-800 rounded-lg p-6 border border-military-700">
+                            <div className="bg-military-800 rounded-lg p-6 border border-military-700 flex-1">
                                 <h3 className="font-semibold text-lg text-white mb-2">Space & Cyber Capabilities</h3>
                                 <div className="grid grid-cols-2 gap-4 text-center">
                                     <div className="bg-black/30 p-3 rounded">
@@ -260,11 +260,11 @@ const AirForceView: React.FC<AirForceViewProps> = ({ onBack }) => {
                 {/* TAB 3: OPS & PERSONNEL */}
                 {activeTab === 'ops' && (
                     <div className="h-full grid grid-cols-1 lg:grid-cols-2 gap-6 overflow-y-auto lg:overflow-hidden">
-                        <div className="bg-military-800 rounded-lg p-6 border border-military-700 h-96 lg:h-auto">
-                            <h3 className="font-semibold text-lg text-white mb-6 flex items-center">
+                        <div className="bg-military-800 rounded-lg p-6 border border-military-700 flex flex-col h-full min-h-[300px]">
+                            <h3 className="font-semibold text-lg text-white mb-6 flex items-center flex-shrink-0">
                                 <Activity className="mr-2 text-green-500" size={20} /> Readiness & Tempo
                             </h3>
-                            <div className="h-64 w-full">
+                            <div className="flex-1 w-full">
                                 <ResponsiveContainer width="100%" height="100%">
                                     <RadarChart cx="50%" cy="50%" outerRadius="80%" data={readinessMetrics}>
                                         <PolarGrid stroke="#334155" />
@@ -279,7 +279,7 @@ const AirForceView: React.FC<AirForceViewProps> = ({ onBack }) => {
                             </div>
                         </div>
 
-                        <div className="flex flex-col gap-6">
+                        <div className="flex flex-col gap-6 h-full overflow-y-auto">
                             <div className="bg-military-800 rounded-lg p-6 border border-military-700">
                                 <h3 className="font-semibold text-lg text-white mb-4">Personnel & Culture</h3>
                                 <ul className="space-y-3 text-sm text-gray-300">
@@ -309,7 +309,7 @@ const AirForceView: React.FC<AirForceViewProps> = ({ onBack }) => {
                 {/* TAB 4: FUTURE & ALLIANCES */}
                 {activeTab === 'future' && (
                     <div className="h-full grid grid-cols-1 lg:grid-cols-2 gap-6 overflow-y-auto lg:overflow-hidden">
-                        <div className="bg-military-800 rounded-lg p-6 border border-military-700">
+                        <div className="bg-military-800 rounded-lg p-6 border border-military-700 h-full overflow-y-auto">
                             <h3 className="font-semibold text-lg text-white mb-6 flex items-center">
                                 <Handshake className="mr-2 text-blue-500" size={20} /> Strategic Partnerships
                             </h3>
@@ -329,7 +329,7 @@ const AirForceView: React.FC<AirForceViewProps> = ({ onBack }) => {
                             </div>
                         </div>
 
-                        <div className="bg-military-800 rounded-lg p-6 border border-military-700">
+                        <div className="bg-military-800 rounded-lg p-6 border border-military-700 h-full overflow-y-auto">
                             <h3 className="font-semibold text-lg text-white mb-6 flex items-center">
                                 <TrendingUp className="mr-2 text-purple-500" size={20} /> Future Trajectory & Challenges
                             </h3>

@@ -4,7 +4,7 @@ import { BrainCircuit, Activity, User, Shield, Zap, RefreshCw, FileText, CheckCi
 import MetricCard from '../components/MetricCard';
 import { useLanguage } from '../contexts/LanguageContext';
 import { ResponsiveContainer, RadarChart, PolarGrid, PolarAngleAxis, Radar, Tooltip, BarChart, Bar, XAxis, YAxis, CartesianGrid } from 'recharts';
-import { runPsychometricAnalysis } from '../services/ollamaService';
+import { runPsychometricAnalysis } from '../services/aiService';
 
 interface AssessmentQuestion {
     id: number;
@@ -66,13 +66,13 @@ const PsychProfileView: React.FC<PsychProfileViewProps> = ({ onBack }) => {
     ] : defaultRadarData;
 
     return (
-        <div className="space-y-6 animate-in fade-in duration-500 flex flex-col h-[calc(100vh-140px)]">
+        <div className="space-y-6 animate-in fade-in duration-500 flex flex-col h-full">
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-2 flex-shrink-0">
                 <div>
-                    <h2 className="text-2xl font-bold text-white tracking-tight flex items-center">
+                    <h2 className="text-2xl font-bold text-white tracking-tight flex items-center font-display">
                         <BrainCircuit className="mr-3 text-purple-500" /> AI Psychometric Profiling
                     </h2>
-                    <p className="text-gray-400 text-sm">Deep Psychological & Intelligence Assessment Module</p>
+                    <p className="text-gray-400 text-sm font-sans">Deep Psychological & Intelligence Assessment Module</p>
                 </div>
                  {onBack && (
                     <button 
@@ -87,10 +87,10 @@ const PsychProfileView: React.FC<PsychProfileViewProps> = ({ onBack }) => {
 
             {!profileData && !analyzing && (
                 <div className="flex-1 flex flex-col items-center justify-center bg-military-800 rounded-lg border border-military-700 p-8 max-w-2xl mx-auto w-full">
-                    <h3 className="text-xl font-bold text-white mb-6">Subject Assessment: Question {currentStep + 1}/{questions.length}</h3>
+                    <h3 className="text-xl font-bold text-white mb-6 font-display">Subject Assessment: Question {currentStep + 1}/{questions.length}</h3>
                     
                     <div className="w-full mb-8">
-                        <p className="text-lg text-gray-200 mb-4">{questions[currentStep].text}</p>
+                        <p className="text-lg text-gray-200 mb-4 font-sans">{questions[currentStep].text}</p>
                         {questions[currentStep].type === 'text' ? (
                             <textarea 
                                 className="w-full bg-military-900 border border-military-600 rounded p-4 text-white focus:border-purple-500 focus:outline-none h-32"
@@ -99,20 +99,25 @@ const PsychProfileView: React.FC<PsychProfileViewProps> = ({ onBack }) => {
                                 onChange={(e) => handleAnswer(e.target.value)}
                             />
                         ) : (
-                            <input 
-                                type="range" 
-                                min="1" max="10" 
-                                className="w-full h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer accent-purple-500"
-                                value={answers[questions[currentStep].id] || 5}
-                                onChange={(e) => handleAnswer(e.target.value)}
-                            />
+                            <div className="flex items-center space-x-4">
+                                <span className="text-gray-400 text-sm">1</span>
+                                <input 
+                                    type="range" 
+                                    min="1" max="10" 
+                                    className="w-full h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer accent-purple-500"
+                                    value={answers[questions[currentStep].id] || 5}
+                                    onChange={(e) => handleAnswer(e.target.value)}
+                                />
+                                <span className="text-gray-400 text-sm">10</span>
+                                <span className="ml-2 font-bold text-purple-400 text-lg">{answers[questions[currentStep].id] || 5}</span>
+                            </div>
                         )}
                     </div>
 
                     <button 
                         onClick={nextStep}
                         disabled={!answers[questions[currentStep].id]}
-                        className="bg-purple-600 hover:bg-purple-700 text-white font-bold py-3 px-8 rounded flex items-center transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                        className="bg-purple-600 hover:bg-purple-700 text-white font-bold py-3 px-8 rounded flex items-center transition-all disabled:opacity-50 disabled:cursor-not-allowed font-display tracking-wide"
                     >
                         {currentStep === questions.length - 1 ? "FINALIZE ASSESSMENT" : "NEXT QUESTION"}
                     </button>
@@ -122,8 +127,8 @@ const PsychProfileView: React.FC<PsychProfileViewProps> = ({ onBack }) => {
             {analyzing && (
                 <div className="flex-1 flex flex-col items-center justify-center text-purple-400">
                     <RefreshCw size={64} className="animate-spin mb-4" />
-                    <h3 className="text-xl font-bold animate-pulse">GENERATING PSYCHOLOGICAL PROFILE...</h3>
-                    <p className="text-gray-500 mt-2">Analyzing linguistic patterns, decision vectors, and emotional markers.</p>
+                    <h3 className="text-xl font-bold animate-pulse font-display">GENERATING PSYCHOLOGICAL PROFILE...</h3>
+                    <p className="text-gray-500 mt-2 font-mono text-sm">Analyzing linguistic patterns, decision vectors, and emotional markers.</p>
                 </div>
             )}
 
@@ -131,14 +136,14 @@ const PsychProfileView: React.FC<PsychProfileViewProps> = ({ onBack }) => {
                 <div className="flex-1 grid grid-cols-1 lg:grid-cols-2 gap-6 min-h-0 overflow-y-auto">
                     {/* Intelligence Metrics */}
                     <div className="bg-military-800 rounded-lg p-6 border border-military-700 flex flex-col">
-                        <h3 className="font-bold text-white mb-4 flex items-center">
+                        <h3 className="font-bold text-white mb-4 flex items-center font-display">
                             <Activity className="mr-2 text-purple-500" /> Intelligence Matrix
                         </h3>
                         <div className="flex-1 min-h-[300px]">
                             <ResponsiveContainer width="100%" height="100%">
                                 <RadarChart cx="50%" cy="50%" outerRadius="80%" data={radarData}>
                                     <PolarGrid stroke="#334155" />
-                                    <PolarAngleAxis dataKey="subject" tick={{ fill: '#94a3b8', fontSize: 12 }} />
+                                    <PolarAngleAxis dataKey="subject" tick={{ fill: '#94a3b8', fontSize: 12, fontFamily: 'monospace' }} />
                                     <Radar name="Subject" dataKey="A" stroke="#8b5cf6" fill="#8b5cf6" fillOpacity={0.5} />
                                     <Tooltip contentStyle={{ backgroundColor: '#1e293b', border: '1px solid #475569' }} />
                                 </RadarChart>
@@ -146,19 +151,19 @@ const PsychProfileView: React.FC<PsychProfileViewProps> = ({ onBack }) => {
                         </div>
                         <div className="grid grid-cols-4 gap-2 text-center mt-4">
                             <div className="bg-military-900 p-2 rounded border border-military-600">
-                                <span className="block text-xs text-gray-500">IQ</span>
+                                <span className="block text-xs text-gray-500 font-mono">IQ</span>
                                 <span className="text-xl font-bold text-white">{profileData.scores.iq}</span>
                             </div>
                             <div className="bg-military-900 p-2 rounded border border-military-600">
-                                <span className="block text-xs text-gray-500">EQ</span>
+                                <span className="block text-xs text-gray-500 font-mono">EQ</span>
                                 <span className="text-xl font-bold text-white">{profileData.scores.eq}</span>
                             </div>
                             <div className="bg-military-900 p-2 rounded border border-military-600">
-                                <span className="block text-xs text-gray-500">SQ</span>
+                                <span className="block text-xs text-gray-500 font-mono">SQ</span>
                                 <span className="text-xl font-bold text-white">{profileData.scores.sq}</span>
                             </div>
                             <div className="bg-military-900 p-2 rounded border border-military-600">
-                                <span className="block text-xs text-gray-500">AQ</span>
+                                <span className="block text-xs text-gray-500 font-mono">AQ</span>
                                 <span className="text-xl font-bold text-white">{profileData.scores.aq}</span>
                             </div>
                         </div>
@@ -166,32 +171,32 @@ const PsychProfileView: React.FC<PsychProfileViewProps> = ({ onBack }) => {
 
                     {/* Personality & Analysis */}
                     <div className="bg-military-800 rounded-lg p-6 border border-military-700 overflow-y-auto">
-                        <h3 className="font-bold text-white mb-4 flex items-center">
+                        <h3 className="font-bold text-white mb-4 flex items-center font-display">
                             <User className="mr-2 text-blue-500" /> Psychological Analysis
                         </h3>
                         
                         <div className="bg-blue-900/10 border border-blue-500/30 p-4 rounded mb-6">
-                            <h4 className="text-sm font-bold text-blue-400 mb-2">Executive Summary</h4>
-                            <p className="text-sm text-gray-300 leading-relaxed">{profileData.analysis.summary}</p>
+                            <h4 className="text-sm font-bold text-blue-400 mb-2 font-display">EXECUTIVE SUMMARY</h4>
+                            <p className="text-sm text-gray-300 leading-relaxed font-serif">{profileData.analysis.summary}</p>
                         </div>
 
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
                             <div>
-                                <h4 className="text-xs font-bold text-green-500 uppercase mb-2">Core Strengths</h4>
+                                <h4 className="text-xs font-bold text-green-500 uppercase mb-2 font-mono">Core Strengths</h4>
                                 <ul className="space-y-1">
                                     {profileData.analysis.strengths.map((s: string, i: number) => (
                                         <li key={i} className="flex items-start text-xs text-gray-300">
-                                            <CheckCircle size={12} className="mr-2 mt-0.5 text-green-500" /> {s}
+                                            <CheckCircle size={12} className="mr-2 mt-0.5 text-green-500 flex-shrink-0" /> {s}
                                         </li>
                                     ))}
                                 </ul>
                             </div>
                             <div>
-                                <h4 className="text-xs font-bold text-red-500 uppercase mb-2">Limitations / Risks</h4>
+                                <h4 className="text-xs font-bold text-red-500 uppercase mb-2 font-mono">Limitations / Risks</h4>
                                 <ul className="space-y-1">
                                     {profileData.analysis.limitations.map((s: string, i: number) => (
                                         <li key={i} className="flex items-start text-xs text-gray-300">
-                                            <Zap size={12} className="mr-2 mt-0.5 text-red-500" /> {s}
+                                            <Zap size={12} className="mr-2 mt-0.5 text-red-500 flex-shrink-0" /> {s}
                                         </li>
                                     ))}
                                 </ul>
@@ -199,13 +204,13 @@ const PsychProfileView: React.FC<PsychProfileViewProps> = ({ onBack }) => {
                         </div>
 
                         <div>
-                            <h4 className="text-xs font-bold text-gray-400 uppercase mb-3">Personality Traits (Big Five Model)</h4>
+                            <h4 className="text-xs font-bold text-gray-400 uppercase mb-3 font-mono">Personality Traits (Big Five)</h4>
                             <div className="space-y-3">
                                 {profileData.traits.map((trait: any, i: number) => (
                                     <div key={i}>
                                         <div className="flex justify-between text-xs mb-1">
-                                            <span className="text-white">{trait.trait}</span>
-                                            <span className="text-gray-400">{trait.score}%</span>
+                                            <span className="text-white font-bold">{trait.trait}</span>
+                                            <span className="text-gray-400 font-mono">{trait.score}%</span>
                                         </div>
                                         <div className="w-full bg-military-900 rounded-full h-1.5">
                                             <div 
@@ -213,7 +218,7 @@ const PsychProfileView: React.FC<PsychProfileViewProps> = ({ onBack }) => {
                                                 style={{ width: `${trait.score}%` }}
                                             ></div>
                                         </div>
-                                        <p className="text-[10px] text-gray-500 mt-0.5">{trait.desc}</p>
+                                        <p className="text-[10px] text-gray-500 mt-0.5 italic">{trait.desc}</p>
                                     </div>
                                 ))}
                             </div>

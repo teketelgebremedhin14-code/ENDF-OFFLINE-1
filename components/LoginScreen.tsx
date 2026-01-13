@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect, useRef } from 'react';
-import { Shield, Fingerprint, Lock, Loader, AlertTriangle, Activity, Hexagon } from 'lucide-react';
+import { Shield, Fingerprint, Lock, Loader, Activity, Hexagon } from 'lucide-react';
 import { useLanguage } from '../contexts/LanguageContext';
 
 interface LoginScreenProps {
@@ -15,66 +15,70 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ onLogin }) => {
 
   // Digital Rain / Matrix Animation with Amharic
   useEffect(() => {
-      const canvas = canvasRef.current;
-      if (!canvas) return;
-      const ctx = canvas.getContext('2d');
-      if (!ctx) return;
+      try {
+          const canvas = canvasRef.current;
+          if (!canvas) return;
+          const ctx = canvas.getContext('2d');
+          if (!ctx) return;
 
-      canvas.width = window.innerWidth;
-      canvas.height = window.innerHeight;
+          const resize = () => {
+              canvas.width = window.innerWidth;
+              canvas.height = window.innerHeight;
+          };
+          
+          resize();
+          window.addEventListener('resize', resize);
 
-      const fontSize = 20; // Increased size
-      const columns = canvas.width / fontSize;
-      const drops: number[] = Array(Math.floor(columns)).fill(1);
+          const fontSize = 20; 
+          // Ensure columns is at least 1 to avoid infinite loops or empty arrays
+          const columns = Math.max(1, Math.floor(canvas.width / fontSize));
+          const drops: number[] = Array(columns).fill(1);
 
-      // Matrix characters + Amharic + Numbers
-      const katakana = 'アァカサタナハマヤャラワガザダバパイィキシチニヒミリヰギジヂビピウゥクスツヌフムユュルグズブヅプエェケセテネヘメレヱゲゼデベペオォコソトノホモヨョロヲゴゾドボポヴッン';
-      const latin = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
-      const nums = '0123456789';
-      // Amharic Characters
-      const amharic = 'ሀለሐመሠረሰሸቀበተቸኀነኘአከኸወዐዘዠየደጀገጠጨጰጸፀፈፐ';
-      
-      const alphabet = katakana + latin + nums + amharic;
+          // Matrix characters + Amharic + Numbers
+          const katakana = 'アァカサタナハマヤャラワガザダバパイィキシチニヒミリヰギジヂビピウゥクスツヌフムユュルグズブヅプエェケセテネヘメレヱゲゼデベペオォコソトノホモヨョロヲゴゾドボポヴッン';
+          const latin = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+          const nums = '0123456789';
+          // Amharic Characters
+          const amharic = 'ሀለሐመሠረሰሸቀበተቸኀነኘአከኸወዐዘዠየደጀገጠጨጰጸፀፈፐ';
+          
+          const alphabet = katakana + latin + nums + amharic;
 
-      let animationFrameId: number;
+          let animationFrameId: number;
 
-      const draw = () => {
-          // Trail effect: Translucent black background
-          ctx.fillStyle = 'rgba(2, 6, 23, 0.05)'; 
-          ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-          ctx.font = `bold ${fontSize}px monospace`; // Added bold weight
-
-          for (let i = 0; i < drops.length; i++) {
-              const text = alphabet.charAt(Math.floor(Math.random() * alphabet.length));
+          const draw = () => {
+              if (!canvas || !ctx) return;
               
-              // Randomly make some characters white (glint), others system color
-              const isWhite = Math.random() > 0.95;
-              ctx.fillStyle = isWhite ? '#ffffff' : '#0ea5e9'; // Cyan/White mix
+              // Trail effect: Translucent black background
+              ctx.fillStyle = 'rgba(2, 6, 23, 0.05)'; 
+              ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-              ctx.fillText(text, i * fontSize, drops[i] * fontSize);
+              ctx.font = `bold ${fontSize}px monospace`; 
 
-              // Randomize drop reset to create varying rain speeds
-              if (drops[i] * fontSize > canvas.height && Math.random() > 0.975) {
-                  drops[i] = 0;
+              for (let i = 0; i < drops.length; i++) {
+                  const text = alphabet.charAt(Math.floor(Math.random() * alphabet.length));
+                  
+                  const isWhite = Math.random() > 0.95;
+                  ctx.fillStyle = isWhite ? '#ffffff' : '#0ea5e9'; 
+
+                  ctx.fillText(text, i * fontSize, drops[i] * fontSize);
+
+                  if (drops[i] * fontSize > canvas.height && Math.random() > 0.975) {
+                      drops[i] = 0;
+                  }
+                  drops[i]++;
               }
-              drops[i]++;
-          }
-          animationFrameId = requestAnimationFrame(draw);
-      };
+              animationFrameId = requestAnimationFrame(draw);
+          };
 
-      draw();
+          draw();
 
-      const handleResize = () => {
-          canvas.width = window.innerWidth;
-          canvas.height = window.innerHeight;
-      };
-      window.addEventListener('resize', handleResize);
-
-      return () => {
-          cancelAnimationFrame(animationFrameId);
-          window.removeEventListener('resize', handleResize);
-      };
+          return () => {
+              if(animationFrameId) cancelAnimationFrame(animationFrameId);
+              window.removeEventListener('resize', resize);
+          };
+      } catch (e) {
+          console.warn("Canvas animation failed to init", e);
+      }
   }, []);
 
   const playBootSound = () => {
@@ -89,18 +93,17 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ onLogin }) => {
           osc.connect(gain);
           gain.connect(ctx.destination);
           
-          // Power up sweep
           osc.type = 'sine';
           osc.frequency.setValueAtTime(100, ctx.currentTime);
-          osc.frequency.exponentialRampToValueAtTime(800, ctx.currentTime + 0.4);
+          osc.frequency.exponentialRampToValueAtTime(800, ctx.currentTime + 0.2);
           
           gain.gain.setValueAtTime(0.1, ctx.currentTime);
-          gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.4);
+          gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.2);
           
           osc.start();
-          osc.stop(ctx.currentTime + 0.4);
+          osc.stop(ctx.currentTime + 0.2);
       } catch (e) {
-          console.error("Audio init failed", e);
+          // Ignore audio failures, don't crash
       }
   };
 
@@ -109,15 +112,10 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ onLogin }) => {
     setLoading(true);
     setStatus(t('login_handshake'));
     
+    // Near instant login (50ms)
     setTimeout(() => {
-        setStatus(t('login_biometric'));
-        setTimeout(() => {
-             setStatus(t('login_granted'));
-             setTimeout(() => {
-                 onLogin();
-             }, 600);
-        }, 1200);
-    }, 1000);
+         onLogin();
+    }, 50); 
   };
 
   return (
@@ -167,7 +165,10 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ onLogin }) => {
                   className="w-full bg-military-accent hover:bg-sky-400 text-black font-bold py-2 rounded flex items-center justify-center transition-all shadow-[0_0_15px_rgba(14,165,233,0.3)] hover:shadow-[0_0_25px_rgba(14,165,233,0.5)] active:scale-95"
                >
                    {loading ? (
-                       <Loader size={12} className="animate-spin" />
+                       <div className="flex items-center text-[10px]">
+                           <Loader size={12} className="animate-spin mr-2" />
+                           CONNECTING...
+                       </div>
                    ) : (
                        <div className="flex items-center text-[10px] tracking-widest uppercase">
                            <Fingerprint size={12} className="mr-1.5" /> 

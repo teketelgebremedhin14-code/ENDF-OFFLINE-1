@@ -1,17 +1,33 @@
 
 import React, { useState } from 'react';
-import { Building2, ShoppingCart, Globe, FileText, Briefcase, Share2, AlertCircle, CheckCircle, Truck, ClipboardCheck, Scale, DollarSign, Activity, X } from 'lucide-react';
+import { Building2, ShoppingCart, Globe, FileText, Briefcase, Share2, AlertCircle, CheckCircle, Truck, ClipboardCheck, Scale, DollarSign, Activity, X, BrainCircuit, RefreshCw } from 'lucide-react';
 import MetricCard from '../components/MetricCard';
 import { useLanguage } from '../contexts/LanguageContext';
 import { ResponsiveContainer, Sankey, Tooltip } from 'recharts';
+import { runStrategySimulation } from '../services/aiService';
 
 interface MinistryViewProps {
     onBack?: () => void;
 }
 
+// Safe Render Helper
+const SafeRender = ({ content }: { content: any }) => {
+    if (typeof content === 'string' || typeof content === 'number') return <>{content}</>;
+    if (typeof content === 'object' && content !== null) {
+        if (content.value) return <>{content.value}</>;
+        return <>{JSON.stringify(content)}</>;
+    }
+    return null;
+};
+
 const MinistryView: React.FC<MinistryViewProps> = ({ onBack }) => {
-    const { t } = useLanguage();
+    const { t, language } = useLanguage();
     const [activeTab, setActiveTab] = useState<'admin' | 'procure'>('admin');
+
+    // Alpha Policy Agent State
+    const [policyProposal, setPolicyProposal] = useState('');
+    const [alphaRunning, setAlphaRunning] = useState(false);
+    const [alphaResult, setAlphaResult] = useState<any>(null);
 
     // Mock Data for Budget Sankey (Simplified for visualization)
     const budgetData = {
@@ -49,27 +65,54 @@ const MinistryView: React.FC<MinistryViewProps> = ({ onBack }) => {
         { id: "ACQ-910", item: "Medium Transport Trucks", vendor: "Bishoftu Auto", status: "Delivery", progress: 98, value: "300M ETB" }
     ];
 
+    const handleRunAlpha = async () => {
+        if (!policyProposal) return;
+        setAlphaRunning(true);
+        setAlphaResult(null);
+
+        try {
+            const resultStr = await runStrategySimulation(
+                `Analyze this defense policy proposal for integration and stability impacts: ${policyProposal}`, 
+                'alpha', 
+                language, 
+                { worldModelFocus: 'Legal & Constitutional' }
+            );
+            
+            let parsed;
+            try {
+                const clean = resultStr.replace(/^```json/, '').replace(/```$/, '').trim();
+                parsed = JSON.parse(clean);
+            } catch (e) {
+                parsed = { summary: resultStr };
+            }
+            setAlphaResult(parsed);
+        } catch (e) {
+            console.error(e);
+        }
+        setAlphaRunning(false);
+    };
+
     return (
-        <div className="space-y-6 animate-in fade-in duration-500 flex flex-col h-[calc(100vh-140px)]">
+        <div className="space-y-6 animate-in fade-in duration-500 flex flex-col h-full">
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-2 flex-shrink-0">
                 <div>
                     <h2 className="text-2xl font-bold text-white tracking-tight font-display">{t('mod_title')}</h2>
-                    <p className="text-gray-400 text-sm font-sans">{t('mod_subtitle')}</p>
+                    <p className="text-gray-400 text-xs font-sans">{t('mod_subtitle')}</p>
                 </div>
                 
                 <div className="mt-4 md:mt-0 flex flex-wrap gap-2 items-center">
                     <div className="bg-military-800 p-1 rounded-lg border border-military-700 flex space-x-1">
                         <button 
                             onClick={() => setActiveTab('admin')}
-                            className={`px-4 py-1.5 text-xs font-bold rounded flex items-center transition-all ${activeTab === 'admin' ? 'bg-cyan-600 text-white shadow' : 'text-gray-400 hover:text-white'}`}
+                            className={`px-4 py-1.5 text-[10px] font-bold rounded flex items-center transition-all ${activeTab === 'admin' ? 'bg-cyan-600 text-white shadow' : 'text-gray-400 hover:text-white'}`}
                         >
-                            <Building2 size={14} className="mr-2"/> {t('mod_tab_admin')}
+                            <Building2 size={12} className="mr-2"/> {t('mod_tab_admin')}
                         </button>
                         <button 
                             onClick={() => setActiveTab('procure')}
-                            className={`px-4 py-1.5 text-xs font-bold rounded flex items-center transition-all ${activeTab === 'procure' ? 'bg-green-600 text-white shadow' : 'text-gray-400 hover:text-white'}`}
+                            className={`px-4 py-1.5 text-[10px] font-bold rounded flex items-center transition-all ${activeTab === 'procure' ? 'bg-green-600 text-white shadow' : 'text-gray-400 hover:text-white'}`}
                         >
-                            <ShoppingCart size={14} className="mr-2"/> {t('mod_tab_procure')}
+                            <ShoppingCart size={12} className="mr-2"/> {t('mod_tab_procure')}
                         </button>
                     </div>
                     {onBack && (
@@ -78,7 +121,7 @@ const MinistryView: React.FC<MinistryViewProps> = ({ onBack }) => {
                             className="p-2 text-gray-400 hover:text-white hover:bg-military-700 rounded transition-colors"
                             title="Exit / Back"
                         >
-                            <X size={20} />
+                            <X size={16} />
                         </button>
                     )}
                 </div>
@@ -97,8 +140,8 @@ const MinistryView: React.FC<MinistryViewProps> = ({ onBack }) => {
                 {activeTab === 'admin' && (
                     <div className="h-full grid grid-cols-1 lg:grid-cols-2 gap-6 overflow-y-auto lg:overflow-hidden">
                         {/* Budget Administration Console */}
-                        <div className="bg-military-800 rounded-lg p-6 border border-military-700 flex flex-col h-96 lg:h-auto">
-                            <h3 className="font-semibold text-lg text-white mb-4 flex items-center">
+                        <div className="bg-military-800 rounded-lg p-6 border border-military-700 flex flex-col h-96 lg:h-full">
+                            <h3 className="font-semibold text-lg text-white mb-4 flex items-center flex-shrink-0">
                                 <DollarSign className="mr-2 text-green-500" size={20} /> {t('mod_budget_admin')}
                             </h3>
                             <div className="flex-1 min-h-[300px] w-full">
@@ -110,18 +153,60 @@ const MinistryView: React.FC<MinistryViewProps> = ({ onBack }) => {
                                         margin={{ left: 10, right: 10, top: 10, bottom: 10 }}
                                         link={{ stroke: '#0891b2' }}
                                     >
-                                        <Tooltip />
+                                        <Tooltip contentStyle={{ backgroundColor: '#1e293b', border: '1px solid #475569', fontSize: '11px' }} />
                                     </Sankey>
                                 </ResponsiveContainer>
                             </div>
                         </div>
 
-                        <div className="flex flex-col gap-6">
-                            {/* Defense Policy Management */}
+                        <div className="flex flex-col gap-6 h-full overflow-y-auto">
+                            {/* Defense Policy Management & Agent Alpha */}
                             <div className="bg-military-800 rounded-lg p-6 border border-military-700 flex-1">
-                                <h3 className="font-semibold text-lg text-white mb-4 flex items-center">
-                                    <Briefcase className="mr-2 text-yellow-500" size={20} /> {t('mod_policy_mgmt')}
+                                <h3 className="font-semibold text-lg text-white mb-4 flex items-center justify-between">
+                                    <span className="flex items-center"><Briefcase className="mr-2 text-yellow-500" size={20} /> {t('mod_policy_mgmt')}</span>
+                                    <span className="text-[10px] bg-blue-900/30 text-blue-300 px-2 py-1 rounded border border-blue-500/30 flex items-center">
+                                        <BrainCircuit size={10} className="mr-1"/> AGENT ALPHA
+                                    </span>
                                 </h3>
+                                
+                                {/* Alpha Agent Interaction */}
+                                <div className="mb-6 p-4 bg-military-900 rounded border border-blue-500/30">
+                                    <label className="text-[10px] text-gray-400 font-bold block mb-2">POLICY SIMULATOR (ALPHA)</label>
+                                    <div className="flex gap-2 mb-3">
+                                        <input 
+                                            type="text" 
+                                            value={policyProposal}
+                                            onChange={(e) => setPolicyProposal(e.target.value)}
+                                            placeholder="e.g. Increase reserve force benefits..."
+                                            className="flex-1 bg-black/30 border border-white/10 rounded p-2 text-white text-xs focus:border-blue-500"
+                                        />
+                                        <button 
+                                            onClick={handleRunAlpha}
+                                            disabled={alphaRunning || !policyProposal}
+                                            className="bg-blue-600 hover:bg-blue-700 text-white rounded px-3 text-[10px] font-bold disabled:opacity-50"
+                                        >
+                                            {alphaRunning ? <RefreshCw className="animate-spin" size={12}/> : 'CONSULT'}
+                                        </button>
+                                    </div>
+                                    
+                                    {alphaResult && (
+                                        <div className="bg-blue-900/10 p-3 rounded border border-blue-500/20 animate-in fade-in">
+                                            <h4 className="text-[10px] font-bold text-blue-400 mb-1">INTEGRATION ANALYSIS</h4>
+                                            <p className="text-[10px] text-gray-300 mb-2"><SafeRender content={alphaResult.summary} /></p>
+                                            <div className="flex gap-4">
+                                                <div className="flex-1 bg-black/20 p-2 rounded">
+                                                    <span className="text-[9px] text-gray-500 block">LEGAL VIABILITY</span>
+                                                    <span className="text-xs text-white font-bold"><SafeRender content={alphaResult.legal_matrix?.compliance_score} />%</span>
+                                                </div>
+                                                <div className="flex-1 bg-black/20 p-2 rounded">
+                                                    <span className="text-[9px] text-gray-500 block">PUBLIC SENTIMENT</span>
+                                                    <span className="text-xs text-white font-bold"><SafeRender content={alphaResult.psych_social_vector?.cognitive_bias_target || "Stable"} /></span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    )}
+                                </div>
+
                                 <div className="space-y-3">
                                     {policies.map((pol) => (
                                         <div key={pol.id} className="p-3 bg-military-900 rounded border border-military-600 flex justify-between items-center group hover:border-yellow-500 transition-colors cursor-pointer">
@@ -179,10 +264,10 @@ const MinistryView: React.FC<MinistryViewProps> = ({ onBack }) => {
                         
                         {/* Procurement Oversight Interface */}
                         <div className="lg:col-span-2 bg-military-800 rounded-lg p-6 border border-military-700 flex flex-col h-auto lg:h-full">
-                            <h3 className="font-semibold text-lg text-white mb-6 flex items-center">
+                            <h3 className="font-semibold text-lg text-white mb-6 flex items-center flex-shrink-0">
                                 <Truck className="mr-2 text-green-500" size={20} /> {t('mod_proc_oversight')}
                             </h3>
-                            <div className="flex-1 space-y-4 overflow-y-auto pr-2">
+                            <div className="flex-1 space-y-4 overflow-y-auto pr-2 custom-scrollbar">
                                 {procurements.map((proc) => (
                                     <div key={proc.id} className="bg-military-900/50 p-4 rounded border border-military-600 hover:border-green-500 transition-all">
                                         <div className="flex justify-between items-start mb-2">
@@ -207,7 +292,7 @@ const MinistryView: React.FC<MinistryViewProps> = ({ onBack }) => {
                         </div>
 
                         {/* QA & Compliance */}
-                        <div className="flex flex-col gap-6">
+                        <div className="flex flex-col gap-6 h-full overflow-y-auto">
                             <div className="bg-military-800 rounded-lg p-6 border border-military-700">
                                 <h3 className="font-semibold text-lg text-white mb-4 flex items-center">
                                     <ClipboardCheck className="mr-2 text-yellow-500" size={20} /> {t('mod_qa_mgmt')}

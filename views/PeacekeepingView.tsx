@@ -19,7 +19,7 @@ const PeacekeepingView: React.FC<PeacekeepingViewProps> = ({ onBack }) => {
     ];
 
     return (
-        <div className="space-y-6 animate-in fade-in duration-500 flex flex-col h-[calc(100vh-140px)]">
+        <div className="space-y-6 animate-in fade-in duration-500 flex flex-col h-full">
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-2 flex-shrink-0">
                 <div>
                     <h2 className="text-2xl font-bold text-white tracking-tight">{t('peace_title')}</h2>

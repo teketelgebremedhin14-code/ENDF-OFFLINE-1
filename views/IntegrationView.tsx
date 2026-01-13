@@ -1,17 +1,32 @@
 
 import React, { useState } from 'react';
-import { GitMerge, Users, AlertCircle, Globe, ShieldCheck, Share2, Activity, Zap, FileText, CheckCircle, BarChart2, X } from 'lucide-react';
+import { GitMerge, Users, AlertCircle, Globe, ShieldCheck, Share2, Activity, Zap, FileText, CheckCircle, BarChart2, X, BrainCircuit, RefreshCw, ArrowRight } from 'lucide-react';
 import MetricCard from '../components/MetricCard';
 import { useLanguage } from '../contexts/LanguageContext';
 import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, CartesianGrid, LineChart, Line } from 'recharts';
+import { runStrategySimulation } from '../services/aiService';
 
 interface IntegrationViewProps {
     onBack?: () => void;
 }
 
+// Safe Render Helper
+const SafeRender = ({ content }: { content: any }) => {
+    if (typeof content === 'string' || typeof content === 'number') return <>{content}</>;
+    if (typeof content === 'object' && content !== null) {
+        if (content.value) return <>{content.value}</>;
+        return <>{JSON.stringify(content)}</>;
+    }
+    return null;
+};
+
 const IntegrationView: React.FC<IntegrationViewProps> = ({ onBack }) => {
-    const { t } = useLanguage();
+    const { t, language } = useLanguage();
     const [activeTab, setActiveTab] = useState<'cross_dept' | 'emergency' | 'international' | 'national_sec'>('cross_dept');
+
+    // Agent Alpha State
+    const [optimizing, setOptimizing] = useState(false);
+    const [alphaPlan, setAlphaPlan] = useState<any>(null);
 
     // Simulated Data for Charts
     const jointOpsData = [
@@ -29,8 +44,36 @@ const IntegrationView: React.FC<IntegrationViewProps> = ({ onBack }) => {
         { stage: 'Recover', time: 'TBD', status: 'Planning' },
     ];
 
+    const handleRunAlphaOptimization = async () => {
+        setOptimizing(true);
+        setAlphaPlan(null);
+        try {
+            const prompt = `Analyze the current inter-departmental silos within the ENDF (Ground, Air, Intel, Logistics). 
+            Propose an 'Alpha Protocol' to optimize resource synchronization and information sharing. 
+            Focus on removing bottlenecks between Intelligence and Operations. 
+            Act as Agent Alpha (The Integrator).`;
+
+            const resultStr = await runStrategySimulation(prompt, 'alpha', language, {
+                worldModelFocus: 'Military Infrastructure',
+                timeHorizon: '30 Days'
+            });
+
+            let parsed;
+            try {
+                const clean = resultStr.replace(/^```json/, '').replace(/```$/, '').trim();
+                parsed = JSON.parse(clean);
+            } catch (e) {
+                parsed = { summary: resultStr, title: "Synergy Report" };
+            }
+            setAlphaPlan(parsed);
+        } catch (e) {
+            console.error(e);
+        }
+        setOptimizing(false);
+    };
+
     return (
-        <div className="space-y-6 animate-in fade-in duration-500 flex flex-col h-[calc(100vh-140px)]">
+        <div className="space-y-6 animate-in fade-in duration-500 flex flex-col h-full">
             {/* Header */}
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-2 flex-shrink-0">
                 <div>
@@ -92,25 +135,74 @@ const IntegrationView: React.FC<IntegrationViewProps> = ({ onBack }) => {
                 {activeTab === 'cross_dept' && (
                     <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 h-full">
                         <div className="bg-military-800 rounded-lg p-6 border border-military-700 flex flex-col">
-                            <h3 className="font-semibold text-lg text-white mb-4 flex items-center">
-                                <Share2 className="mr-2 text-blue-500" size={20} /> Department Collaboration System
-                            </h3>
-                            <p className="text-xs text-gray-400 mb-6">{t('coord_joint_desc')}</p>
-                            
-                            <div className="flex-1">
-                                <h4 className="text-sm font-bold text-gray-300 mb-2">Resource Synchronization Score</h4>
-                                <div className="h-64 w-full">
-                                    <ResponsiveContainer width="100%" height="100%">
-                                        <BarChart data={jointOpsData} layout="vertical">
-                                            <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="#334155" />
-                                            <XAxis type="number" stroke="#94a3b8" domain={[0, 100]} />
-                                            <YAxis dataKey="name" type="category" width={100} stroke="#94a3b8" fontSize={12} />
-                                            <Tooltip contentStyle={{ backgroundColor: '#1e293b', border: '1px solid #475569' }} cursor={{fill: 'transparent'}} />
-                                            <Bar dataKey="value" fill="#3b82f6" radius={[0, 4, 4, 0]} barSize={20} />
-                                        </BarChart>
-                                    </ResponsiveContainer>
-                                </div>
+                            <div className="flex justify-between items-center mb-4">
+                                <h3 className="font-semibold text-lg text-white flex items-center">
+                                    <Share2 className="mr-2 text-blue-500" size={20} /> Department Collaboration
+                                </h3>
+                                {!alphaPlan && (
+                                    <button 
+                                        onClick={handleRunAlphaOptimization}
+                                        disabled={optimizing}
+                                        className="text-[10px] bg-blue-900/30 text-blue-300 border border-blue-500/50 px-3 py-1 rounded flex items-center hover:bg-blue-900/50 transition-colors disabled:opacity-50"
+                                    >
+                                        <BrainCircuit size={12} className={`mr-2 ${optimizing ? 'animate-spin' : ''}`} />
+                                        {optimizing ? "OPTIMIZING..." : "RUN ALPHA OPTIMIZER"}
+                                    </button>
+                                )}
                             </div>
+                            
+                            {!alphaPlan ? (
+                                <>
+                                    <p className="text-xs text-gray-400 mb-6">{t('coord_joint_desc')}</p>
+                                    <div className="flex-1">
+                                        <h4 className="text-sm font-bold text-gray-300 mb-2">Resource Synchronization Score</h4>
+                                        <div className="h-64 w-full">
+                                            <ResponsiveContainer width="100%" height="100%">
+                                                <BarChart data={jointOpsData} layout="vertical">
+                                                    <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="#334155" />
+                                                    <XAxis type="number" stroke="#94a3b8" domain={[0, 100]} />
+                                                    <YAxis dataKey="name" type="category" width={100} stroke="#94a3b8" fontSize={12} />
+                                                    <Tooltip contentStyle={{ backgroundColor: '#1e293b', border: '1px solid #475569' }} cursor={{fill: 'transparent'}} />
+                                                    <Bar dataKey="value" fill="#3b82f6" radius={[0, 4, 4, 0]} barSize={20} />
+                                                </BarChart>
+                                            </ResponsiveContainer>
+                                        </div>
+                                    </div>
+                                </>
+                            ) : (
+                                <div className="flex-1 overflow-y-auto animate-in fade-in slide-in-from-right-4">
+                                    <div className="bg-blue-900/20 border border-blue-500/30 rounded p-4 mb-4">
+                                        <div className="flex items-center mb-2">
+                                            <BrainCircuit className="text-blue-400 mr-2" size={18}/>
+                                            <h4 className="text-sm font-bold text-white uppercase tracking-wide">Alpha Synergy Protocol</h4>
+                                        </div>
+                                        <p className="text-xs text-gray-300 leading-relaxed whitespace-pre-wrap"><SafeRender content={alphaPlan.summary} /></p>
+                                    </div>
+
+                                    {alphaPlan.strategic_options && (
+                                        <div className="space-y-3">
+                                            <h5 className="text-xs font-bold text-gray-400 uppercase">Optimization Steps</h5>
+                                            {alphaPlan.strategic_options.map((opt: any, i: number) => (
+                                                <div key={i} className="flex items-start p-3 bg-military-900 rounded border border-military-600">
+                                                    <div className="w-5 h-5 bg-blue-500 rounded-full flex items-center justify-center text-[10px] text-black font-bold mr-3 flex-shrink-0">
+                                                        {i+1}
+                                                    </div>
+                                                    <div>
+                                                        <h6 className="text-xs font-bold text-white"><SafeRender content={opt.name} /></h6>
+                                                        <p className="text-[10px] text-gray-400 mt-1"><SafeRender content={opt.description} /></p>
+                                                    </div>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    )}
+                                    <button 
+                                        onClick={() => setAlphaPlan(null)}
+                                        className="mt-4 w-full text-xs text-gray-500 hover:text-white text-center underline"
+                                    >
+                                        Return to Standard View
+                                    </button>
+                                </div>
+                            )}
                         </div>
 
                         <div className="bg-military-800 rounded-lg p-6 border border-military-700 overflow-y-auto">

@@ -26,11 +26,11 @@ const VeteransView: React.FC<VeteransViewProps> = ({ onBack }) => {
     );
 
     return (
-        <div className="space-y-6 animate-in fade-in duration-500 flex flex-col h-[calc(100vh-140px)]">
+        <div className="space-y-6 animate-in fade-in duration-500 flex flex-col h-full">
             <div className="flex justify-between items-center mb-2 flex-shrink-0">
                 <div>
                     <h2 className="text-2xl font-bold text-white tracking-tight font-display">{t('vet_title')}</h2>
-                    <p className="text-gray-400 text-sm font-sans">{t('vet_subtitle')}</p>
+                    <p className="text-gray-400 text-xs font-sans">{t('vet_subtitle')}</p>
                 </div>
                 {onBack && (
                     <button 
@@ -52,20 +52,20 @@ const VeteransView: React.FC<VeteransViewProps> = ({ onBack }) => {
 
             <div className="flex-1 grid grid-cols-1 lg:grid-cols-3 gap-6 min-h-0 overflow-y-auto">
                 {/* Search & List */}
-                <div className="bg-military-800 rounded-lg p-6 border border-military-700 flex flex-col">
-                    <h3 className="font-semibold text-lg text-white mb-4 flex items-center font-display">
+                <div className="bg-military-800 rounded-lg p-6 border border-military-700 flex flex-col h-full">
+                    <h3 className="font-semibold text-lg text-white mb-4 flex items-center font-display flex-shrink-0">
                         <Search className="mr-2 text-blue-500" size={20} /> Veteran Case Search
                     </h3>
-                    <div className="mb-4">
+                    <div className="mb-4 flex-shrink-0">
                         <input 
                             type="text" 
                             placeholder="Search by Name or ID..." 
                             value={searchTerm}
                             onChange={(e) => setSearchTerm(e.target.value)}
-                            className="w-full bg-military-900 border border-military-600 rounded p-3 text-white focus:border-blue-500 focus:outline-none font-mono text-sm"
+                            className="w-full bg-military-900 border border-military-600 rounded p-3 text-white focus:border-blue-500 focus:outline-none font-mono text-xs"
                         />
                     </div>
-                    <div className="flex-1 overflow-y-auto space-y-2">
+                    <div className="flex-1 overflow-y-auto space-y-2 pr-2 custom-scrollbar">
                         {filteredVets.map(vet => (
                             <div 
                                 key={vet.id} 
@@ -73,17 +73,17 @@ const VeteransView: React.FC<VeteransViewProps> = ({ onBack }) => {
                                 className={`p-3 rounded border cursor-pointer transition-colors ${selectedVeteran?.id === vet.id ? 'bg-blue-900/30 border-blue-500' : 'bg-military-900 border-military-600 hover:border-gray-500'}`}
                             >
                                 <div className="flex justify-between items-center">
-                                    <span className="font-bold text-white text-sm font-sans">{vet.name}</span>
-                                    <span className={`text-[10px] px-2 py-0.5 rounded ${vet.status.includes('Active') ? 'bg-green-900/50 text-green-400' : 'bg-yellow-900/50 text-yellow-400'}`}>{vet.status}</span>
+                                    <span className="font-bold text-white text-xs font-sans">{vet.name}</span>
+                                    <span className={`text-[9px] px-2 py-0.5 rounded ${vet.status.includes('Active') ? 'bg-green-900/50 text-green-400' : 'bg-yellow-900/50 text-yellow-400'}`}>{vet.status}</span>
                                 </div>
-                                <p className="text-xs text-gray-400 font-mono">{vet.id} • {vet.unit}</p>
+                                <p className="text-[10px] text-gray-400 font-mono">{vet.id} • {vet.unit}</p>
                             </div>
                         ))}
                     </div>
                 </div>
 
                 {/* Details / Rehab */}
-                <div className="lg:col-span-2 space-y-6">
+                <div className="lg:col-span-2 space-y-6 h-full overflow-y-auto">
                     {/* Rehab Stats (Existing) */}
                     <div className="bg-military-800 rounded-lg p-6 border border-military-700 flex flex-col">
                         <h3 className="font-semibold text-lg text-white mb-6 flex items-center font-display">
@@ -123,7 +123,7 @@ const VeteransView: React.FC<VeteransViewProps> = ({ onBack }) => {
                         </h3>
                         <div className="space-y-4">
                             <div>
-                                <div className="flex justify-between text-sm mb-1">
+                                <div className="flex justify-between text-xs mb-1">
                                     <span className="text-gray-300 font-sans">Monthly Pension Run</span>
                                     <span className="text-green-400 font-bold">100% Complete</span>
                                 </div>
@@ -132,7 +132,7 @@ const VeteransView: React.FC<VeteransViewProps> = ({ onBack }) => {
                                 </div>
                             </div>
                              <div>
-                                <div className="flex justify-between text-sm mb-1">
+                                <div className="flex justify-between text-xs mb-1">
                                     <span className="text-gray-300 font-sans">Housing Grant Apps</span>
                                     <span className="text-yellow-400 font-bold">Processing (45%)</span>
                                 </div>

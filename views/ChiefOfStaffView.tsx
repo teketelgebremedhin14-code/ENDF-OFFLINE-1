@@ -1,10 +1,10 @@
 
 import React, { useState } from 'react';
-import { Shield, Target, Activity, Globe, Map, BookOpen, Clock, FileText, CheckCircle, Award, Crosshair, Users, ChevronRight, AlertTriangle, File, X, MessageSquare, ArrowUpRight, Plus, RefreshCw, BrainCircuit, Lightbulb, Anchor, Plane, Tent, List } from 'lucide-react';
+import { Shield, Target, Activity, Globe, Map, BookOpen, Clock, FileText, CheckCircle, Award, Crosshair, Users, ChevronRight, AlertTriangle, File, X, MessageSquare, ArrowUpRight, Plus, RefreshCw, BrainCircuit, Lightbulb, Anchor, Plane, Tent, List, Scale, TrendingUp, Brain } from 'lucide-react';
 import MetricCard from '../components/MetricCard';
 import { useLanguage } from '../contexts/LanguageContext';
-import { ResponsiveContainer, RadarChart, PolarGrid, PolarAngleAxis, Radar, Tooltip, BarChart, Bar, XAxis, YAxis, CartesianGrid } from 'recharts';
-import { recommendStrategy } from '../services/ollamaService';
+import { ResponsiveContainer, RadarChart, PolarGrid, PolarAngleAxis, Radar, Tooltip, BarChart, Bar, XAxis, YAxis, CartesianGrid, Cell, ReferenceLine } from 'recharts';
+import { runStrategySimulation } from '../services/aiService';
 import TaskList from '../components/TaskList';
 import { Task } from '../types';
 
@@ -16,13 +16,14 @@ interface ChiefOfStaffViewProps {
 const SafeRender = ({ content }: { content: any }) => {
     if (typeof content === 'string' || typeof content === 'number') return <>{content}</>;
     if (typeof content === 'object' && content !== null) {
+        if (content.value !== undefined) return <>{String(content.value)}</>;
         return <>{JSON.stringify(content)}</>;
     }
     return null;
 };
 
 const ChiefOfStaffView: React.FC<ChiefOfStaffViewProps> = ({ onBack }) => {
-    const { t } = useLanguage();
+    const { t, language } = useLanguage();
     const [activeTab, setActiveTab] = useState<'command' | 'strategy' | 'directives'>('command');
     
     // Strategy AI Director State
@@ -31,6 +32,13 @@ const ChiefOfStaffView: React.FC<ChiefOfStaffViewProps> = ({ onBack }) => {
     const [enemyProfile, setEnemyProfile] = useState('Conventional Force');
     const [isThinking, setIsThinking] = useState(false);
     const [strategyResult, setStrategyResult] = useState<any>(null);
+    const [simMode, setSimMode] = useState<'alpha' | 'sigma'>('alpha');
+    const [sigmaPersona, setSigmaPersona] = useState<'human_advisory' | 'autonomous_manual'>('human_advisory');
+    const [simParams, setSimParams] = useState({
+        timeHorizon: '30 Days (Operational)',
+        worldModelFocus: 'Geopolitical & Economic'
+    });
+    const [scenarioInput, setScenarioInput] = useState('');
 
     // Strategic Directives (Tasks)
     const [tasks, setTasks] = useState<Task[]>([
@@ -74,13 +82,6 @@ const ChiefOfStaffView: React.FC<ChiefOfStaffViewProps> = ({ onBack }) => {
         { subject: 'Morale', A: 90, fullMark: 100 },
     ];
 
-    const capabilityData = [
-        { name: 'Power Projection', current: 65, target: 85 },
-        { name: 'Cyber Defense', current: 78, target: 95 },
-        { name: 'Rapid Response', current: 82, target: 90 },
-        { name: 'Joint Ops', current: 70, target: 100 },
-    ];
-
     const [insights, setInsights] = useState([
         { id: 'INS-044', source: 'Sgt. Kebede (3rd Div)', text: 'Rations quality in Sector 4 deteriorating. Morale impact observed.', severity: 'High', status: 'Pending' },
         { id: 'INS-045', source: 'Lt. Sarah (Signals)', text: 'New radio encryption protocols causing lag in remote outposts.', severity: 'Medium', status: 'Pending' },
@@ -91,19 +92,54 @@ const ChiefOfStaffView: React.FC<ChiefOfStaffViewProps> = ({ onBack }) => {
         setInsights(prev => prev.map(ins => ins.id === id ? { ...ins, status: 'Actioned' } : ins));
     };
 
+    const cleanJsonString = (str: string) => {
+        let cleaned = str.trim();
+        if (cleaned.startsWith('```json')) {
+            cleaned = cleaned.replace(/^```json/, '').replace(/```$/, '');
+        } else if (cleaned.startsWith('```')) {
+            cleaned = cleaned.replace(/^```/, '').replace(/```$/, '');
+        }
+        return cleaned.trim();
+    };
+
     const handleGenerateStrategy = async () => {
         if (!sitRep.trim()) return;
         setIsThinking(true);
         setStrategyResult(null);
         
         try {
-            const result = await recommendStrategy(sitRep, stratDomain, enemyProfile);
-            setStrategyResult(result);
+            // Using runStrategySimulation for deeper analysis than recommendStrategy
+            const rawResult = await runStrategySimulation(
+                `Generate strategic advice. Domain: ${stratDomain}. Enemy: ${enemyProfile}. Situation: ${sitRep}`, 
+                simMode, 
+                language,
+                { ...simParams, sigmaMode: sigmaPersona }
+            );
+            
+            let parsedResult;
+            try {
+                parsedResult = JSON.parse(cleanJsonString(rawResult));
+            } catch (e) {
+                console.error("JSON Parsing failed", e);
+                parsedResult = { recommended_strategy: "Analysis Error", rationale: rawResult };
+            }
+            setStrategyResult(parsedResult);
         } catch (e) {
             console.error(e);
         }
         setIsThinking(false);
     };
+
+    const impactData = strategyResult?.cross_domain_matrix ? [
+        { subject: 'Mil', A: strategyResult.cross_domain_matrix.military_readiness },
+        { subject: 'Dip', A: strategyResult.cross_domain_matrix.diplomatic_trust },
+        { subject: 'Econ', A: strategyResult.cross_domain_matrix.economic_cost },
+        { subject: 'Soc', A: strategyResult.cross_domain_matrix.domestic_morale },
+        { subject: 'Leg', A: strategyResult.cross_domain_matrix.legal_compliance },
+    ] : [];
+
+    const getBarColor = (val: number) => val > 0 ? '#10b981' : '#ef4444';
+    const getAgentAccent = () => simMode === 'alpha' ? 'bg-blue-600' : 'bg-red-600';
 
     return (
         <div className="space-y-6 animate-in fade-in duration-500 flex flex-col h-[calc(100vh-140px)]">
@@ -285,131 +321,246 @@ const ChiefOfStaffView: React.FC<ChiefOfStaffViewProps> = ({ onBack }) => {
                     <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 h-full overflow-y-auto lg:overflow-hidden">
                         
                         {/* Input Panel */}
-                        <div className="w-full lg:col-span-1 bg-military-800 rounded-lg p-6 border border-military-700 flex flex-col h-auto lg:h-full">
-                            <h3 className="font-bold text-white text-lg font-display mb-6 flex items-center">
-                                <BrainCircuit className="mr-2 text-purple-500" /> AI Strategy Director
-                            </h3>
+                        <div className={`w-full lg:col-span-1 rounded-lg p-6 border flex flex-col h-auto lg:h-full transition-colors duration-500 ${simMode === 'alpha' ? 'bg-blue-950/20 border-blue-500/30' : 'bg-red-950/20 border-red-500/30'}`}>
+                            <div className="flex items-center justify-between mb-6 flex-shrink-0">
+                                <h3 className={`font-bold text-lg font-display ${simMode === 'alpha' ? 'text-blue-400' : 'text-red-500'}`}>
+                                    {simMode === 'alpha' ? 'AGENT ALPHA (INTEGRATOR)' : 'AGENT SIGMA (ADVERSARY)'}
+                                </h3>
+                                <div className="flex bg-black/30 rounded p-1">
+                                    <button onClick={() => setSimMode('alpha')} className={`px-3 py-1 text-[10px] font-bold rounded transition-all ${simMode === 'alpha' ? 'bg-blue-600 text-white' : 'text-gray-400'}`}>ALPHA</button>
+                                    <button onClick={() => setSimMode('sigma')} className={`px-3 py-1 text-[10px] font-bold rounded transition-all ${simMode === 'sigma' ? 'bg-red-600 text-white' : 'text-gray-400'}`}>SIGMA</button>
+                                </div>
+                            </div>
                             
-                            <div className="space-y-6 flex-1 overflow-y-auto">
-                                <div>
-                                    <label className="text-xs font-bold text-gray-400 block mb-2">OPERATIONAL DOMAIN</label>
-                                    <div className="grid grid-cols-4 gap-2">
-                                        <button onClick={() => setStratDomain('Land')} className={`p-2 rounded border flex flex-col items-center justify-center transition-all ${stratDomain === 'Land' ? 'bg-green-600 border-green-400 text-white' : 'bg-military-900 border-military-600 text-gray-400 hover:text-white'}`}>
-                                            <Tent size={16} className="mb-1"/>
-                                            <span className="text-[10px]">LAND</span>
+                            {/* Sigma Sub-Mode Toggle */}
+                            {simMode === 'sigma' && (
+                                <div className="mb-4 bg-red-900/20 p-2 rounded border border-red-500/30 flex justify-between items-center">
+                                    <span className="text-[10px] text-red-300 font-bold uppercase">Persona Mode</span>
+                                    <div className="flex gap-1">
+                                        <button 
+                                            onClick={() => setSigmaPersona('human_advisory')}
+                                            className={`px-2 py-1 text-[9px] rounded border ${sigmaPersona === 'human_advisory' ? 'bg-red-600 text-white border-red-500' : 'text-gray-500 border-transparent'}`}
+                                        >
+                                            HUMAN ADVISOR
                                         </button>
-                                        <button onClick={() => setStratDomain('Air')} className={`p-2 rounded border flex flex-col items-center justify-center transition-all ${stratDomain === 'Air' ? 'bg-cyan-600 border-cyan-400 text-white' : 'bg-military-900 border-military-600 text-gray-400 hover:text-white'}`}>
-                                            <Plane size={16} className="mb-1"/>
-                                            <span className="text-[10px]">AIR</span>
-                                        </button>
-                                        <button onClick={() => setStratDomain('Naval')} className={`p-2 rounded border flex flex-col items-center justify-center transition-all ${stratDomain === 'Naval' ? 'bg-blue-600 border-blue-400 text-white' : 'bg-military-900 border-military-600 text-gray-400 hover:text-white'}`}>
-                                            <Anchor size={16} className="mb-1"/>
-                                            <span className="text-[10px]">NAVAL</span>
-                                        </button>
-                                        <button onClick={() => setStratDomain('Joint')} className={`p-2 rounded border flex flex-col items-center justify-center transition-all ${stratDomain === 'Joint' ? 'bg-purple-600 border-purple-400 text-white' : 'bg-military-900 border-military-600 text-gray-400 hover:text-white'}`}>
-                                            <Users size={16} className="mb-1"/>
-                                            <span className="text-[10px]">JOINT</span>
+                                        <button 
+                                            onClick={() => setSigmaPersona('autonomous_manual')}
+                                            className={`px-2 py-1 text-[9px] rounded border ${sigmaPersona === 'autonomous_manual' ? 'bg-black text-red-500 border-red-500 animate-pulse' : 'text-gray-500 border-transparent'}`}
+                                        >
+                                            AUTONOMOUS AI
                                         </button>
                                     </div>
                                 </div>
+                            )}
 
+                            <div className="space-y-4 flex-1 overflow-y-auto">
                                 <div>
-                                    <label className="text-xs font-bold text-gray-400 block mb-2">ENEMY PROFILE</label>
+                                    <label className="text-[10px] font-bold text-gray-400 block mb-1">WORLD MODEL FOCUS</label>
                                     <select 
-    value={enemyProfile} 
-    onChange={(e) => setEnemyProfile(e.target.value)}
-    className="w-full bg-military-900 border border-military-600 rounded p-3 text-white text-sm focus:border-purple-500 outline-none"
->
-    <option value="Conventional Force (State Actor)">Conventional Force (State Actor)</option>
-    <option value="Insurgent / Guerilla">Insurgent / Guerilla</option>
-    <option value="Hybrid / Asymmetric">Hybrid / Asymmetric</option>
-    <option value="Terrorist Cell">Terrorist Cell</option>
-</select>
-                                    
+                                        value={simParams.worldModelFocus}
+                                        onChange={(e) => setSimParams({...simParams, worldModelFocus: e.target.value})}
+                                        className="w-full bg-black/40 border border-white/10 rounded p-2 text-white text-xs focus:border-white/30 outline-none"
+                                    >
+                                        <option>Geopolitical & Economic</option>
+                                        <option>Legal & Constitutional</option>
+                                        <option>Cultural & Psychological</option>
+                                        <option>Military Infrastructure</option>
+                                    </select>
                                 </div>
 
                                 <div>
-                                    <label className="text-xs font-bold text-gray-400 block mb-2">SITUATION REPORT</label>
+                                    <label className="text-[10px] font-bold text-gray-400 block mb-1">TIME HORIZON</label>
+                                    <select 
+                                        value={simParams.timeHorizon}
+                                        onChange={(e) => setSimParams({...simParams, timeHorizon: e.target.value})}
+                                        className="w-full bg-black/40 border border-white/10 rounded p-2 text-white text-xs focus:border-white/30 outline-none"
+                                    >
+                                        <option>48 Hours (Tactical)</option>
+                                        <option>30 Days (Operational)</option>
+                                        <option>180 Days (Strategic)</option>
+                                    </select>
+                                </div>
+
+                                <div>
+                                    <label className="text-[10px] font-bold text-gray-400 block mb-1">SCENARIO INJECTION</label>
                                     <textarea 
-                                        value={sitRep}
-                                        onChange={(e) => setSitRep(e.target.value)}
-                                        className="w-full h-40 bg-military-900 border border-military-600 rounded p-3 text-white text-sm focus:border-purple-500 outline-none resize-none"
-                                        placeholder="Describe the tactical situation (e.g., 'Enemy digging in at key mountain pass, heavy artillery support')..."
+                                        className={`w-full h-40 bg-black/40 border rounded p-3 text-xs focus:outline-none resize-none text-gray-200 ${simMode === 'alpha' ? 'border-blue-500/30 focus:border-blue-500' : 'border-red-500/30 focus:border-red-500'}`}
+                                        placeholder={simMode === 'alpha' 
+                                            ? "Describe the integration goal (e.g., 'Establish regional energy pact via dam diplomacy')..." 
+                                            : "Describe the target system (e.g., 'Destabilize supply chain using legal loopholes')..."} 
+                                        value={scenarioInput} 
+                                        onChange={(e) => setScenarioInput(e.target.value)} 
                                     />
                                 </div>
 
                                 <button 
-                                    onClick={handleGenerateStrategy}
-                                    disabled={isThinking || !sitRep}
-                                    className="w-full py-4 bg-purple-600 hover:bg-purple-700 text-white font-bold rounded shadow-lg flex items-center justify-center disabled:opacity-50"
+                                    onClick={handleGenerateStrategy} 
+                                    disabled={isThinking || !scenarioInput} 
+                                    className={`w-full py-4 text-white font-bold rounded shadow-lg flex items-center justify-center disabled:opacity-50 text-xs transition-all ${getAgentAccent()} hover:scale-105`}
                                 >
-                                    {isThinking ? <RefreshCw className="animate-spin mr-2" /> : <Lightbulb className="mr-2" />} 
-                                    GENERATE STRATEGY
+                                    {isThinking ? <RefreshCw className="animate-spin mr-2" size={14}/> : <BrainCircuit className="mr-2" size={14}/>} 
+                                    {simMode === 'alpha' ? 'RUN CONSTRUCTIVE SIMULATION' : 'RUN ADVERSARIAL STRESS TEST'}
                                 </button>
                             </div>
                         </div>
+                        
+                        {/* Output Panel */}
+                        <div className="lg:col-span-2 bg-black/30 rounded-lg border border-white/10 p-6 relative h-full overflow-y-auto min-h-[400px]">
+                             {!strategyResult && !isThinking && (
+                                 <div className="flex flex-col items-center justify-center h-full text-gray-500">
+                                     <BrainCircuit size={64} className="mb-4 opacity-20" />
+                                     <p className="text-xs font-mono uppercase tracking-widest">Awaiting Simulation Parameters</p>
+                                 </div>
+                             )}
+                             
+                             {isThinking && (
+                                 <div className={`flex flex-col items-center justify-center h-full ${simMode === 'alpha' ? 'text-blue-400' : 'text-red-400'}`}>
+                                     <RefreshCw size={64} className="mb-4 animate-spin" />
+                                     <p className="text-xs font-mono uppercase tracking-widest animate-pulse">
+                                         {simMode === 'alpha' ? 'Building Coalitions & Legal Paths...' : 'Scanning for Vulnerabilities...'}
+                                     </p>
+                                 </div>
+                             )}
 
-                        {/* Result Panel */}
-                        <div className="lg:col-span-2 bg-[#0b1120] rounded-lg border border-military-700 p-8 overflow-y-auto relative h-auto lg:h-full min-h-[500px]">
-                            {/* Background Pattern */}
-                            <div className="absolute inset-0 opacity-5 pointer-events-none" style={{ backgroundImage: 'radial-gradient(#a855f7 1px, transparent 1px)', backgroundSize: '30px 30px' }}></div>
+                             {strategyResult && (
+                                <div className="space-y-8 animate-in fade-in slide-in-from-right-4">
+                                    <div className={`border-b pb-4 ${simMode === 'alpha' ? 'border-blue-900' : 'border-red-900'}`}>
+                                        <h2 className="text-2xl font-bold text-white"><SafeRender content={strategyResult.title || strategyResult.recommended_strategy} /></h2>
+                                        <p className="text-gray-300 mt-2 text-sm italic"><SafeRender content={strategyResult.summary || strategyResult.rationale} /></p>
+                                        
+                                        {/* Insider Inference Engine Display */}
+                                        {strategyResult.insider_inference && (
+                                            <div className="mt-4 p-3 bg-black/50 border border-gray-700 rounded flex items-center justify-between">
+                                                <div className="flex items-center">
+                                                    <Lock size={16} className={simMode === 'alpha' ? 'text-blue-500' : 'text-red-500'} />
+                                                    <span className="ml-2 text-xs font-bold text-gray-400 uppercase">Insider Inference Model</span>
+                                                </div>
+                                                <div className="text-right">
+                                                    <span className="text-[10px] text-gray-500 block">Probable Architecture:</span>
+                                                    <span className="text-xs font-mono text-white"><SafeRender content={strategyResult.insider_inference.system_guess} /></span>
+                                                </div>
+                                                <div className="text-right">
+                                                    <span className="text-[10px] text-gray-500 block">Confidence:</span>
+                                                    <span className={`text-xs font-mono font-bold ${strategyResult.insider_inference.confidence > 75 ? 'text-green-500' : 'text-yellow-500'}`}>
+                                                        <SafeRender content={strategyResult.insider_inference.confidence} />%
+                                                    </span>
+                                                </div>
+                                            </div>
+                                        )}
+                                    </div>
 
-                            {!strategyResult && !isThinking && (
-                                <div className="flex flex-col items-center justify-center h-full text-gray-600">
-                                    <BrainCircuit size={64} className="mb-4 opacity-20" />
-                                    <p className="text-sm font-mono uppercase tracking-widest">Awaiting Command Input...</p>
-                                </div>
-                            )}
+                                    {/* 1. Psychological & Legal Vectors */}
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                        <div className={`p-4 rounded border ${simMode === 'alpha' ? 'bg-blue-900/10 border-blue-500/30' : 'bg-red-900/10 border-red-500/30'}`}>
+                                            <h3 className={`text-xs font-bold uppercase mb-3 flex items-center ${simMode === 'alpha' ? 'text-blue-400' : 'text-red-400'}`}>
+                                                <Brain size={14} className="mr-2"/> Psych-Social Exploitation
+                                            </h3>
+                                            <div className="space-y-2 text-[10px]">
+                                                <div className="flex justify-between border-b border-white/5 pb-1">
+                                                    <span className="text-gray-400">Cultural Fault Line:</span>
+                                                    <span className="text-white text-right"><SafeRender content={strategyResult.psych_social_vector?.cultural_fault_line} /></span>
+                                                </div>
+                                                <div className="flex justify-between border-b border-white/5 pb-1">
+                                                    <span className="text-gray-400">Cognitive Bias:</span>
+                                                    <span className="text-white text-right"><SafeRender content={strategyResult.psych_social_vector?.cognitive_bias_target} /></span>
+                                                </div>
+                                                <div className="flex justify-between">
+                                                    <span className="text-gray-400">Bio/Physical Limit:</span>
+                                                    <span className="text-white text-right"><SafeRender content={strategyResult.psych_social_vector?.biological_factor} /></span>
+                                                </div>
+                                            </div>
+                                        </div>
 
-                            {isThinking && (
-                                <div className="flex flex-col items-center justify-center h-full text-purple-500">
-                                    <RefreshCw size={48} className="mb-4 animate-spin" />
-                                    <p className="text-sm font-mono uppercase tracking-widest animate-pulse">Consulting Military Doctrine...</p>
-                                </div>
-                            )}
-
-                            {strategyResult && (
-                                <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4">
-                                    <div className="border-l-4 border-purple-500 pl-6">
-                                        <span className="text-xs font-bold text-purple-400 uppercase tracking-wider">Recommended Course of Action</span>
-                                        <h2 className="text-3xl font-bold text-white mt-1 font-display">
-                                            <SafeRender content={strategyResult.recommended_strategy} />
-                                        </h2>
-                                        <div className="text-gray-300 mt-4 text-sm leading-relaxed">
-                                            <SafeRender content={strategyResult.rationale} />
+                                        <div className={`p-4 rounded border ${simMode === 'alpha' ? 'bg-blue-900/10 border-blue-500/30' : 'bg-red-900/10 border-red-500/30'}`}>
+                                            <h3 className={`text-xs font-bold uppercase mb-3 flex items-center ${simMode === 'alpha' ? 'text-blue-400' : 'text-red-400'}`}>
+                                                <Scale size={14} className="mr-2"/> Legal Matrix Analysis
+                                            </h3>
+                                            <div className="space-y-2 text-[10px]">
+                                                <div className="flex justify-between border-b border-white/5 pb-1">
+                                                    <span className="text-gray-400">Mechanism:</span>
+                                                    <span className="text-white text-right"><SafeRender content={strategyResult.legal_matrix?.mechanism} /></span>
+                                                </div>
+                                                <div className="flex justify-between">
+                                                    <span className="text-gray-400">Viability:</span>
+                                                    <span className={`${strategyResult.legal_matrix?.compliance_score || 0 > 50 ? 'text-green-500' : 'text-yellow-500'} text-right font-bold`}>
+                                                        <SafeRender content={strategyResult.legal_matrix?.status} /> (<SafeRender content={strategyResult.legal_matrix?.compliance_score} />%)
+                                                    </span>
+                                                </div>
+                                            </div>
                                         </div>
                                     </div>
 
-                                    {strategyResult.principle_application && (
-                                        <div>
-                                            <h4 className="text-sm font-bold text-white uppercase mb-4 flex items-center"><CheckCircle size={16} className="mr-2 text-green-500"/> Principles of War Applied</h4>
-                                            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                                                {strategyResult.principle_application.map((p: any, idx: number) => (
-                                                    <div key={idx} className="bg-military-900/50 p-4 rounded border border-military-600">
-                                                        <span className="text-purple-400 font-bold block mb-1 text-sm"><SafeRender content={p.principle} /></span>
-                                                        <p className="text-xs text-gray-400"><SafeRender content={p.application} /></p>
-                                                    </div>
-                                                ))}
-                                            </div>
+                                    {/* 2. Impact Matrix (Bar Chart) */}
+                                    <div className="bg-military-900/50 p-4 rounded border border-military-600">
+                                        <h3 className="text-xs font-bold text-gray-400 uppercase mb-3 flex items-center">
+                                            <Activity size={14} className="mr-2"/> Cross-Domain Impact Assessment
+                                        </h3>
+                                        <div className="h-40 w-full">
+                                            <ResponsiveContainer width="100%" height="100%">
+                                                <BarChart data={impactData} layout="vertical" margin={{left: 40}}>
+                                                    <CartesianGrid strokeDasharray="3 3" horizontal={true} vertical={false} stroke="#334155" />
+                                                    <XAxis type="number" domain={[-10, 10]} hide />
+                                                    <YAxis dataKey="subject" type="category" width={80} stroke="#94a3b8" fontSize={10} />
+                                                    <Tooltip cursor={{fill: 'transparent'}} contentStyle={{ backgroundColor: '#1e293b', border: '1px solid #475569' }} />
+                                                    <ReferenceLine x={0} stroke="#666" />
+                                                    <Bar dataKey="A" fill={simMode === 'alpha' ? '#3b82f6' : '#ef4444'} barSize={15}>
+                                                        {impactData.map((entry, index) => (
+                                                            <Cell key={`cell-${index}`} fill={getBarColor(entry.A)} />
+                                                        ))}
+                                                    </Bar>
+                                                </BarChart>
+                                            </ResponsiveContainer>
+                                        </div>
+                                    </div>
+
+                                    {/* 3. Strategic Options Table */}
+                                    {strategyResult.strategic_options && (
+                                        <div className="overflow-x-auto">
+                                            <h3 className="text-xs font-bold text-white uppercase mb-3 flex items-center">
+                                                <Target size={14} className="mr-2 text-yellow-500"/> Recommended Courses of Action
+                                            </h3>
+                                            <table className="w-full text-left text-[10px] text-gray-300 border-collapse">
+                                                <thead className="bg-military-800 text-gray-400 uppercase font-display border-b border-military-600">
+                                                    <tr>
+                                                        <th className="p-3">Option</th>
+                                                        <th className="p-3">Score</th>
+                                                        <th className="p-3">Cost</th>
+                                                        <th className="p-3">Risk</th>
+                                                        <th className="p-3">Probability</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody className="divide-y divide-military-700 bg-military-900/30">
+                                                    {strategyResult.strategic_options.map((opt: any) => (
+                                                        <tr key={opt.id} className="hover:bg-military-800 transition-colors">
+                                                            <td className="p-3">
+                                                                <strong className="text-white block mb-1"><SafeRender content={opt.name} /></strong>
+                                                                <span className="text-[9px] text-gray-500"><SafeRender content={opt.description} /></span>
+                                                            </td>
+                                                            <td className="p-3 font-mono font-bold text-blue-400"><SafeRender content={opt.deterrence_score} /></td>
+                                                            <td className="p-3"><SafeRender content={opt.cost_projection} /></td>
+                                                            <td className="p-3"><SafeRender content={opt.civilian_risk} /></td>
+                                                            <td className="p-3">
+                                                                <div className="flex items-center">
+                                                                    <span className="mr-2 font-bold"><SafeRender content={opt.win_probability} />%</span>
+                                                                    <div className="w-16 bg-gray-700 h-1.5 rounded-full overflow-hidden">
+                                                                        <div className={`h-full ${simMode === 'alpha' ? 'bg-blue-500' : 'bg-red-500'}`} style={{width: `${opt.win_probability}%`}}></div>
+                                                                    </div>
+                                                                </div>
+                                                            </td>
+                                                        </tr>
+                                                    ))}
+                                                </tbody>
+                                            </table>
                                         </div>
                                     )}
 
-                                    {strategyResult.operational_approach && (
-                                        <div>
-                                            <h4 className="text-sm font-bold text-white uppercase mb-4 flex items-center"><Activity size={16} className="mr-2 text-blue-500"/> Operational Phases</h4>
-                                            <div className="space-y-4 relative pl-4 border-l border-military-600 ml-2">
-                                                {strategyResult.operational_approach.map((step: any, idx: number) => (
-                                                    <div key={idx} className="relative">
-                                                        <div className="absolute -left-[21px] top-1.5 w-3 h-3 bg-blue-500 rounded-full border-2 border-[#0b1120]"></div>
-                                                        <h5 className="text-sm font-bold text-blue-400"><SafeRender content={step.phase} /></h5>
-                                                        <p className="text-sm text-gray-300 mt-1"><SafeRender content={step.action} /></p>
-                                                    </div>
-                                                ))}
-                                            </div>
-                                        </div>
-                                    )}
+                                    {/* 4. Rationale */}
+                                    <div className={`border-l-4 p-4 rounded text-xs text-gray-300 ${simMode === 'alpha' ? 'bg-blue-900/10 border-blue-500' : 'bg-red-900/10 border-red-500'}`}>
+                                        <strong className={simMode === 'alpha' ? 'text-blue-400' : 'text-red-400'}>STRATEGIC RATIONALE:</strong>
+                                        <div className="mt-1"><SafeRender content={strategyResult.rationale} /></div>
+                                    </div>
                                 </div>
-                            )}
+                             )}
                         </div>
                     </div>
                 )}

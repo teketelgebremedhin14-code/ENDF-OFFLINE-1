@@ -4,6 +4,7 @@ import { HeartPulse, Stethoscope, Ambulance, Activity, X, Siren, MapPin, Buildin
 import MetricCard from '../components/MetricCard';
 import { useLanguage } from '../contexts/LanguageContext';
 import { ResponsiveContainer, LineChart, Line, XAxis, YAxis, Tooltip, CartesianGrid, BarChart, Bar } from 'recharts';
+import { getAIContextInsight } from '../services/aiService';
 
 interface MedevacMission {
     id: string;
@@ -26,6 +27,8 @@ const HealthView: React.FC<HealthViewProps> = ({ onBack }) => {
   const [missions, setMissions] = useState<MedevacMission[]>([
       { id: 'MED-992', location: 'Sector 4', type: 'Air (Helo)', status: 'Returning', patients: 2, eta: '12m' }
   ]);
+  const [aiInsight, setAiInsight] = useState<string>("Click to analyze unit stress levels.");
+  const [loadingInsight, setLoadingInsight] = useState(false);
   
   // 6.2 Resilience Data
   const stressData = [
@@ -62,6 +65,17 @@ const HealthView: React.FC<HealthViewProps> = ({ onBack }) => {
     return () => clearInterval(interval);
   }, []);
 
+  const handleRunBioAnalysis = async () => {
+      setLoadingInsight(true);
+      try {
+          const insight = await getAIContextInsight("Biometric Unit Fatigue", { current_data: stressData, trend: trendData });
+          setAiInsight(insight);
+      } catch (e) {
+          setAiInsight("Unable to connect to Medical AI Core.");
+      }
+      setLoadingInsight(false);
+  }
+
   const handleDispatch = (e: React.FormEvent) => {
       e.preventDefault();
       const newMission: MedevacMission = {
@@ -77,7 +91,7 @@ const HealthView: React.FC<HealthViewProps> = ({ onBack }) => {
   };
 
   return (
-    <div className="space-y-6 animate-in fade-in duration-500 flex flex-col h-[calc(100vh-140px)]">
+    <div className="space-y-6 animate-in fade-in duration-500 flex flex-col h-full">
       {/* Header */}
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-2 flex-shrink-0">
         <div>
@@ -219,9 +233,14 @@ const HealthView: React.FC<HealthViewProps> = ({ onBack }) => {
           {activeTab === 'resilience' && (
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 h-full overflow-y-auto lg:overflow-hidden">
                   <div className="bg-military-800 rounded-lg p-6 border border-military-700 flex flex-col">
-                      <h3 className="font-semibold text-lg text-white mb-6 flex items-center">
-                          <BrainCircuit className="mr-2 text-purple-500" size={20} /> {t('health_bio_analysis')}
-                      </h3>
+                      <div className="flex justify-between items-center mb-6">
+                          <h3 className="font-semibold text-lg text-white flex items-center">
+                              <BrainCircuit className="mr-2 text-purple-500" size={20} /> {t('health_bio_analysis')}
+                          </h3>
+                          <button onClick={handleRunBioAnalysis} disabled={loadingInsight} className="text-xs bg-purple-600 hover:bg-purple-700 text-white px-3 py-1 rounded">
+                              {loadingInsight ? "ANALYZING..." : "RUN AI BIO-SCAN"}
+                          </button>
+                      </div>
                       <div className="flex-1 w-full min-h-[300px]">
                           <ResponsiveContainer width="100%" height="100%">
                               <BarChart data={stressData} layout="vertical">
@@ -253,7 +272,7 @@ const HealthView: React.FC<HealthViewProps> = ({ onBack }) => {
                               </ResponsiveContainer>
                           </div>
                           <div className="mt-2 p-3 bg-red-900/20 border border-red-500/30 rounded text-xs text-red-300">
-                              <strong>AI Insight:</strong> 3rd Division showing elevated fatigue markers. Recommend rotation in 48hrs.
+                              <strong>AI Insight:</strong> {aiInsight}
                           </div>
                       </div>
 

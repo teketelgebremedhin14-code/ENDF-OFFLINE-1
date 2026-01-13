@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import Sidebar from './components/Sidebar';
 import LoginScreen from './components/LoginScreen';
@@ -46,26 +45,36 @@ import InspectorGeneralView from './views/InspectorGeneralView';
 import TrainingView from './views/TrainingView';
 import FinanceView from './views/FinanceView';
 
-const MainLayout: React.FC = () => {
+// Inner component that uses the LanguageContext
+const AppContent: React.FC = () => {
   const { t, language, setLanguage } = useLanguage();
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [currentView, setCurrentView] = useState<ViewState>(ViewState.OVERVIEW);
   const [defcon, setDefcon] = useState(3);
   const [mode, setMode] = useState<'standard' | 'green' | 'red'>('standard');
-  const [isSidebarOpen, setIsSidebarOpen] = useState(false); // Closed by default on mobile
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false); 
   const [showPalette, setShowPalette] = useState(false);
   const [showDataTerminal, setShowDataTerminal] = useState(false);
   const [showInbox, setShowInbox] = useState(false);
   const [showFeedback, setShowFeedback] = useState(false);
   const [notifications, setNotifications] = useState<string[]>([]);
-  const [scrolled, setScrolled] = useState(false);
   const [langMenuOpen, setLangMenuOpen] = useState(false);
 
   // Set initial sidebar state based on screen size
   useEffect(() => {
-    if (window.innerWidth >= 768) {
-      setIsSidebarOpen(true);
-    }
+    const handleResize = () => {
+        if (window.innerWidth >= 768) {
+            setIsSidebarOpen(true);
+        } else {
+            setIsSidebarOpen(false);
+        }
+    };
+    
+    // Initial check
+    handleResize();
+    
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
   }, []);
 
   // Keyboard Shortcuts
@@ -83,8 +92,8 @@ const MainLayout: React.FC = () => {
   // Event Listeners for Global Tools
   useEffect(() => {
     const openTerminalHandler = () => setShowDataTerminal(true);
-    window.addEventListener('open-data-terminal', openTerminalHandler);
-    return () => window.removeEventListener('open-data-terminal', openTerminalHandler);
+    window.addEventListener('open-data-terminal', openTerminalHandler as EventListener);
+    return () => window.removeEventListener('open-data-terminal', openTerminalHandler as EventListener);
   }, []);
 
   // Simulated Notifications
@@ -131,15 +140,21 @@ const MainLayout: React.FC = () => {
       { code: 'so', label: 'Somali' }
   ];
 
+  const handleNavigate = (view: ViewState) => {
+      setCurrentView(view);
+      if(window.innerWidth < 768) {
+          setIsSidebarOpen(false);
+      }
+  };
+
   const renderView = () => {
-    // Pass common props to views that need navigation or feedback access
     const commonProps = {
         onBack: goBackToDashboard,
         onFeedback: () => setShowFeedback(true)
     };
 
     switch (currentView) {
-      case ViewState.OVERVIEW: return <DashboardOverview onNavigate={setCurrentView} defcon={defcon} />;
+      case ViewState.OVERVIEW: return <DashboardOverview onNavigate={handleNavigate} defcon={defcon} />;
       case ViewState.PRESIDENTIAL: return <PresidentialView defcon={defcon} setDefcon={setDefcon} {...commonProps} />;
       case ViewState.PRIME_MINISTER: return <PrimeMinisterView defcon={defcon} setDefcon={setDefcon} {...commonProps} />;
       case ViewState.OPERATIONS: return <OperationalView {...commonProps} />;
@@ -147,11 +162,9 @@ const MainLayout: React.FC = () => {
       case ViewState.LOGISTICS: return <LogisticsView {...commonProps} />;
       case ViewState.SPACE_COMMAND: return <SpaceCommandView {...commonProps} />;
       case ViewState.REPORTS: return <ReportsView {...commonProps} />;
-      
-      // Other Views - All receiving commonProps for navigation
       case ViewState.HR: return <HRView {...commonProps} />;
       case ViewState.HEALTH: return <HealthView {...commonProps} />;
-      case ViewState.SETTINGS: return <SettingsView currentMode={mode} onModeChange={setMode} />;
+      case ViewState.SETTINGS: return <SettingsView currentMode={mode} onModeChange={setMode} {...commonProps} />;
       case ViewState.COMMUNICATIONS: return <CommunicationsView {...commonProps} />;
       case ViewState.INFO_OPS: return <InfoOpsView {...commonProps} />;
       case ViewState.FOREIGN_RELATIONS: return <ForeignRelationsView {...commonProps} />;
@@ -173,7 +186,7 @@ const MainLayout: React.FC = () => {
       case ViewState.INSPECTOR_GENERAL: return <InspectorGeneralView {...commonProps} />;
       case ViewState.TRAINING: return <TrainingView {...commonProps} />;
       case ViewState.FINANCE: return <FinanceView {...commonProps} />;
-      default: return <DashboardOverview onNavigate={setCurrentView} defcon={defcon} />;
+      default: return <DashboardOverview onNavigate={handleNavigate} defcon={defcon} />;
     }
   };
 
@@ -182,7 +195,7 @@ const MainLayout: React.FC = () => {
   }
 
   return (
-    <div className={`flex h-screen overflow-hidden bg-military-950 text-gray-200 font-sans selection:bg-military-accent selection:text-black ${getModeClasses()}`}>
+    <div className={`flex h-[100dvh] w-screen overflow-hidden bg-military-950 text-gray-200 font-sans selection:bg-military-accent selection:text-black ${getModeClasses()}`}>
       
       {/* Mobile Sidebar Overlay */}
       {isSidebarOpen && (
@@ -193,20 +206,20 @@ const MainLayout: React.FC = () => {
       )}
 
       {/* Sidebar */}
-      <div className={`fixed inset-y-0 left-0 z-30 w-64 bg-military-900 border-r border-military-800 transition-transform duration-300 ease-in-out transform ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'} md:translate-x-0 md:static md:flex-shrink-0`}>
+      <div className={`fixed inset-y-0 left-0 z-30 w-64 bg-military-900 border-r border-military-800 transition-transform duration-300 ease-in-out transform ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'} md:translate-x-0 md:static md:flex-shrink-0 flex flex-col shadow-2xl md:shadow-none`}>
         <Sidebar 
             currentView={currentView} 
-            onViewChange={(view) => { setCurrentView(view); if(window.innerWidth < 768) setIsSidebarOpen(false); }} 
+            onViewChange={handleNavigate} 
             defconLevel={defcon} 
         />
       </div>
 
       {/* Main Content Area */}
-      <div className="flex-1 flex flex-col h-full relative overflow-hidden w-full">
+      <div className="flex-1 flex flex-col h-full w-full min-w-0 relative overflow-hidden">
         
         {/* Top Bar */}
-        <header className={`h-16 bg-military-900/80 backdrop-blur-md border-b border-military-800 flex items-center justify-between px-4 z-20 flex-shrink-0 transition-all duration-300 ${scrolled ? 'shadow-md' : ''}`}>
-          <div className="flex items-center">
+        <header className={`h-14 bg-military-900/80 backdrop-blur-md border-b border-military-800 flex items-center justify-between px-4 z-20 flex-shrink-0 transition-all duration-300`}>
+          <div className="flex items-center min-w-0">
             <button 
               onClick={() => setIsSidebarOpen(!isSidebarOpen)}
               className="p-2 mr-2 text-gray-400 hover:text-white rounded-lg hover:bg-military-800 transition-colors md:hidden"
@@ -218,34 +231,34 @@ const MainLayout: React.FC = () => {
             {currentView !== ViewState.OVERVIEW && (
                 <button 
                     onClick={goBackToDashboard}
-                    className="flex items-center mr-4 text-gray-400 hover:text-white hover:bg-military-800 px-2 py-1 rounded transition-colors"
+                    className="flex items-center mr-3 text-gray-400 hover:text-white hover:bg-military-800 px-2 py-1 rounded transition-colors flex-shrink-0"
                     title="Back to Dashboard"
                 >
-                    <ArrowLeft size={18} className="mr-1" />
-                    <span className="text-xs font-bold hidden sm:inline">DASHBOARD</span>
+                    <ArrowLeft size={16} className="mr-1" />
+                    <span className="text-[10px] font-bold hidden sm:inline tracking-wider">DASHBOARD</span>
                 </button>
             )}
 
-            <div className="flex flex-col">
-               <div className="text-[10px] text-military-500 font-mono tracking-widest uppercase hidden sm:block">{t('news_ticker_label')}</div>
-               <div className="w-32 md:w-96 overflow-hidden h-5 relative">
-                  <div className="animate-marquee whitespace-nowrap text-xs text-military-accent font-mono absolute">
+            <div className="flex flex-col min-w-0 overflow-hidden">
+               <div className="text-[8px] text-military-500 font-mono tracking-widest uppercase hidden sm:block truncate">{t('news_ticker_label')}</div>
+               <div className="w-32 md:w-80 overflow-hidden h-4 relative">
+                  <div className="animate-marquee whitespace-nowrap text-[10px] text-military-accent font-mono absolute">
                      {t('news_ticker_items') && notifications.length > 0 ? notifications.join(" ••• ") : "SYSTEM NORMAL ••• SECURE CONNECTION ESTABLISHED ••• ENDF NEXUS ONLINE"}
                   </div>
                </div>
             </div>
           </div>
 
-          <div className="flex items-center space-x-2 md:space-x-3">
+          <div className="flex items-center space-x-2 flex-shrink-0">
             {/* Language Switcher */}
             <div className="relative">
                 <button 
                     onClick={() => setLangMenuOpen(!langMenuOpen)}
-                    className="flex items-center space-x-1 px-2 py-1.5 bg-military-800 hover:bg-military-700 text-gray-300 rounded border border-military-600 text-xs font-bold uppercase transition-colors"
+                    className="flex items-center space-x-1 px-2 py-1 bg-military-800 hover:bg-military-700 text-gray-300 rounded border border-military-600 text-[10px] font-bold uppercase transition-colors"
                 >
-                    <Globe size={14} />
+                    <Globe size={12} />
                     <span className="hidden sm:inline">{languages.find(l => l.code === language)?.label.split(' ')[0] || 'EN'}</span>
-                    <ChevronDown size={12} className={`transition-transform ${langMenuOpen ? 'rotate-180' : ''}`} />
+                    <ChevronDown size={10} className={`transition-transform ${langMenuOpen ? 'rotate-180' : ''}`} />
                 </button>
                 {langMenuOpen && (
                     <div className="absolute right-0 top-full mt-2 w-40 bg-military-900 border border-military-700 rounded shadow-xl z-50 overflow-hidden">
@@ -262,28 +275,28 @@ const MainLayout: React.FC = () => {
                 )}
             </div>
 
-            {/* Field Insight Button - Always Visible & Distinct */}
+            {/* Field Insight Button */}
             <button 
                 onClick={() => setShowFeedback(true)}
-                className="flex items-center p-2 bg-red-600 hover:bg-red-700 text-white rounded shadow-lg transition-colors animate-pulse hover:animate-none"
+                className="flex items-center p-1.5 bg-red-600 hover:bg-red-700 text-white rounded shadow-lg transition-colors animate-pulse hover:animate-none"
                 title={t('feedback_title')}
             >
-                <MessageSquare size={16} />
-                <span className="text-xs font-bold ml-2 hidden lg:inline">INSIGHT</span>
+                <MessageSquare size={14} />
+                <span className="text-[10px] font-bold ml-1 hidden lg:inline">INSIGHT</span>
             </button>
 
             <button 
                 onClick={() => setShowInbox(true)}
-                className="p-2 text-gray-400 hover:text-white rounded-full hover:bg-military-800 transition-colors hidden sm:block"
+                className="p-1.5 text-gray-400 hover:text-white rounded-full hover:bg-military-800 transition-colors hidden sm:block"
                 title={t('inbox_title')}
             >
-                <Mail size={20} />
+                <Mail size={18} />
             </button>
 
             <div className="relative group hidden sm:block">
-               <button className="p-2 text-gray-400 hover:text-white rounded-full hover:bg-military-800 relative">
-                 <Bell size={20} />
-                 {notifications.length > 0 && <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-red-500 rounded-full animate-pulse"></span>}
+               <button className="p-1.5 text-gray-400 hover:text-white rounded-full hover:bg-military-800 relative">
+                 <Bell size={18} />
+                 {notifications.length > 0 && <span className="absolute top-1 right-1 w-1.5 h-1.5 bg-red-500 rounded-full animate-pulse"></span>}
                </button>
                {/* Dropdown Notification */}
                <div className="absolute right-0 top-full mt-2 w-72 bg-military-900 border border-military-700 rounded shadow-xl opacity-0 group-hover:opacity-100 invisible group-hover:visible transition-all duration-200 z-50 transform origin-top-right">
@@ -305,32 +318,32 @@ const MainLayout: React.FC = () => {
             
             <button 
               onClick={() => setShowPalette(true)}
-              className="hidden md:flex items-center px-3 py-1.5 bg-military-800 hover:bg-military-700 text-gray-400 text-xs rounded border border-military-700 transition-colors"
+              className="hidden md:flex items-center px-2 py-1 bg-military-800 hover:bg-military-700 text-gray-400 text-[10px] rounded border border-military-700 transition-colors"
             >
-              <span className="mr-2">⌘K</span> {t('cmd_footer')}
+              <span className="mr-1 font-bold">⌘K</span> {t('cmd_footer')}
             </button>
 
-            <div className="h-8 w-[1px] bg-military-700 mx-2 hidden sm:block"></div>
+            <div className="h-6 w-[1px] bg-military-700 mx-1 hidden sm:block"></div>
 
             <div className="flex items-center space-x-2">
                 <div className="text-right hidden lg:block">
-                    <div className="text-xs font-bold text-white">CMDR. ABEBE</div>
-                    <div className="text-[10px] text-gray-500 font-mono">LEVEL 5 CLEARANCE</div>
+                    <div className="text-[10px] font-bold text-white leading-tight">CMDR. ABEBE</div>
+                    <div className="text-[8px] text-gray-500 font-mono">LEVEL 5</div>
                 </div>
-                <div className="w-8 h-8 bg-military-800 rounded-full border border-military-600 flex items-center justify-center text-military-accent font-bold text-xs relative">
+                <div className="w-7 h-7 bg-military-800 rounded-full border border-military-600 flex items-center justify-center text-military-accent font-bold text-[10px] relative">
                     CA
-                    <span className="absolute bottom-0 right-0 w-2.5 h-2.5 bg-green-500 border-2 border-military-900 rounded-full"></span>
+                    <span className="absolute bottom-0 right-0 w-2 h-2 bg-green-500 border-2 border-military-900 rounded-full"></span>
                 </div>
             </div>
             
-            <button onClick={handleLogout} className="ml-2 text-gray-500 hover:text-red-400" title={t('logout')}>
-                <LogOut size={18} />
+            <button onClick={handleLogout} className="ml-1 text-gray-500 hover:text-red-400 p-1" title={t('logout')}>
+                <LogOut size={16} />
             </button>
           </div>
         </header>
 
         {/* View Content */}
-        <main className="flex-1 overflow-hidden bg-military-950 p-3 md:p-6 relative">
+        <main className="flex-1 relative overflow-hidden bg-military-950 p-2 md:p-4 flex flex-col h-full w-full">
            {renderView()}
         </main>
 
@@ -341,7 +354,7 @@ const MainLayout: React.FC = () => {
         <CommandPalette 
             isOpen={showPalette} 
             onClose={() => setShowPalette(false)} 
-            onNavigate={(view) => setCurrentView(view)} 
+            onNavigate={handleNavigate} 
             onAction={(action) => { 
                 if(action === 'logout') handleLogout(); 
                 if(action === 'inbox') setShowInbox(true);
@@ -358,10 +371,11 @@ const MainLayout: React.FC = () => {
   );
 };
 
+// Main App component that wraps with LanguageProvider
 const App: React.FC = () => {
   return (
     <LanguageProvider>
-      <MainLayout />
+      <AppContent />
     </LanguageProvider>
   );
 };

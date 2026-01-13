@@ -3,7 +3,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Wifi, Radio, Server, Globe, Lock, Activity, ShieldCheck, AlertTriangle, Key, Languages, Mic, X } from 'lucide-react';
 import MetricCard from '../components/MetricCard';
 import { useLanguage } from '../contexts/LanguageContext';
-import { generateRadioChatter } from '../services/ollamaService';
+import { generateRadioChatter } from '../services/aiService';
 
 interface CommunicationsViewProps {
     onBack?: () => void;
@@ -77,7 +77,7 @@ const CommunicationsView: React.FC<CommunicationsViewProps> = ({ onBack }) => {
     };
 
     return (
-        <div className="space-y-6 animate-in fade-in duration-500 flex flex-col h-[calc(100vh-140px)]">
+        <div className="space-y-6 animate-in fade-in duration-500 flex flex-col h-full">
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-2 flex-shrink-0">
                 <div>
                     <h2 className="text-2xl font-bold text-white tracking-tight font-display">{t('comms_title')}</h2>

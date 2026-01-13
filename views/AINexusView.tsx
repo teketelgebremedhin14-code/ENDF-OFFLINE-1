@@ -4,7 +4,7 @@ import { BrainCircuit, Activity, Network, TrendingUp, Cpu, Database, Share2, Lay
 import MetricCard from '../components/MetricCard';
 import { useLanguage } from '../contexts/LanguageContext';
 import { ResponsiveContainer, RadarChart, PolarGrid, PolarAngleAxis, Radar, Tooltip, LineChart, Line, XAxis, YAxis, PieChart, Pie, Cell, ScatterChart, Scatter, ZAxis, BarChart, Bar, CartesianGrid } from 'recharts';
-import { runAdvancedSimulation } from '../services/ollamaService';
+import { runAdvancedSimulation } from '../services/aiService';
 
 interface AINexusViewProps {
     onBack?: () => void;
@@ -86,7 +86,7 @@ const AINexusView: React.FC<AINexusViewProps> = ({ onBack }) => {
     };
 
     return (
-        <div className="space-y-6 animate-in fade-in duration-500 flex flex-col h-[calc(100vh-140px)]">
+       <div className="space-y-6 animate-in fade-in duration-500 flex flex-col h-[calc(100vh-140px)]">
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-2 flex-shrink-0">
                 <div>
                     <h2 className="text-2xl font-bold text-white tracking-tight">{t('ai_title')}</h2>

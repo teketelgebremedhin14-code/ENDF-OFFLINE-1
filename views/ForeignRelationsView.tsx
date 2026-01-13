@@ -1,17 +1,34 @@
 
 import React, { useState } from 'react';
-import { Handshake, Globe, MapPin, Users, FileText, Info, Lock, Eye, X } from 'lucide-react';
+import { Handshake, Globe, MapPin, Users, FileText, Info, Lock, Eye, X, RefreshCw, AlertTriangle, ShieldAlert, Zap } from 'lucide-react';
 import MetricCard from '../components/MetricCard';
 import { useLanguage } from '../contexts/LanguageContext';
+import { draftSRSCommunication, runStrategySimulation } from '../services/aiService';
 
 interface ForeignRelationsViewProps {
     onBack?: () => void;
 }
 
+// Safe Render Helper
+const SafeRender = ({ content }: { content: any }) => {
+    if (typeof content === 'string' || typeof content === 'number') return <>{content}</>;
+    if (typeof content === 'object' && content !== null) {
+        if (content.value) return <>{content.value}</>;
+        return <>{JSON.stringify(content)}</>;
+    }
+    return null;
+};
+
 const ForeignRelationsView: React.FC<ForeignRelationsViewProps> = ({ onBack }) => {
-    const { t } = useLanguage();
+    const { t, language } = useLanguage();
     const [selectedNation, setSelectedNation] = useState<any | null>(null);
     const [showCable, setShowCable] = useState(false);
+    const [cableContent, setCableContent] = useState('');
+    const [loadingCable, setLoadingCable] = useState(false);
+    
+    // Agent Sigma State
+    const [sigmaLoading, setSigmaLoading] = useState(false);
+    const [sigmaAnalysis, setSigmaAnalysis] = useState<any>(null);
 
     const attaches = [
         { country: t('foreign_country_usa'), city: 'Washington D.C.', officer: 'Col. Haile', status: t('status_active') },
@@ -22,28 +39,79 @@ const ForeignRelationsView: React.FC<ForeignRelationsViewProps> = ({ onBack }) =
     ];
 
     const mapPoints = [
-        { id: 'us', x: 25, y: 35, name: t('foreign_country_usa'), status: t('foreign_status_ally'), summary: t('foreign_summary_usa'), color: '#3b82f6', cable: "SECRET CABLE: 2025-US-ETH\n\nSUBJECT: Security Cooperation Update\n\n1. Joint task force operations in Horn region showing positive outcomes.\n2. Request for expedited FMS processing for logistics support.\n3. Strategic dialogue scheduled for next month." },
-        { id: 'cn', x: 75, y: 35, name: t('foreign_country_china'), status: t('foreign_status_partner'), summary: t('foreign_summary_china'), color: '#3b82f6', cable: "CONFIDENTIAL CABLE: 2025-CN-ETH\n\nSUBJECT: Infrastructure Grant\n\n1. Railway security protocols reviewed.\n2. Technical training team arriving Addis Ababa Oct 20.\n3. Satellite downlink integration proceeding." },
-        { id: 'ru', x: 65, y: 20, name: t('foreign_country_russia'), status: t('foreign_status_neutral'), summary: t('foreign_summary_russia'), color: '#f59e0b', cable: "CABLE: 2025-RU-ETH\n\nSUBJECT: Maintenance Support\n\n1. Su-27 parts shipment delayed 2 weeks.\n2. Technical advisors request visa extension." },
-        { id: 'ke', x: 58, y: 55, name: t('foreign_country_kenya'), status: t('foreign_status_ally'), summary: t('foreign_summary_kenya'), color: '#10b981', cable: "URGENT CABLE: 2025-KE-ETH\n\nSUBJECT: Border Intel Sharing\n\n1. Increased activity detected Sector 4.\n2. Joint patrol initiated.\n3. Request real-time drone feed access." },
-        { id: 'tr', x: 55, y: 32, name: t('foreign_country_turkey'), status: t('foreign_status_partner'), summary: t('foreign_summary_turkey'), color: '#3b82f6', cable: "CABLE: 2025-TR-ETH\n\nSUBJECT: UAV Systems\n\n1. TB2 maintenance cycle complete.\n2. New operator training batch ready." },
-        { id: 'dj', x: 60, y: 50, name: t('foreign_country_djibouti'), status: t('foreign_status_critical'), summary: t('foreign_summary_djibouti'), color: '#10b981', cable: "CRITICAL CABLE: 2025-DJ-ETH\n\nSUBJECT: Port Logistics\n\n1. Berth 4 congestion cleared.\n2. Priority military cargo fast-tracked." },
+        { id: 'us', x: 25, y: 35, name: t('foreign_country_usa'), status: t('foreign_status_ally'), summary: t('foreign_summary_usa'), color: '#3b82f6' },
+        { id: 'cn', x: 75, y: 35, name: t('foreign_country_china'), status: t('foreign_status_partner'), summary: t('foreign_summary_china'), color: '#3b82f6' },
+        { id: 'ru', x: 65, y: 20, name: t('foreign_country_russia'), status: t('foreign_status_neutral'), summary: t('foreign_summary_russia'), color: '#f59e0b' },
+        { id: 'ke', x: 58, y: 55, name: t('foreign_country_kenya'), status: t('foreign_status_ally'), summary: t('foreign_summary_kenya'), color: '#10b981' },
+        { id: 'tr', x: 55, y: 32, name: t('foreign_country_turkey'), status: t('foreign_status_partner'), summary: t('foreign_summary_turkey'), color: '#3b82f6' },
+        { id: 'dj', x: 60, y: 50, name: t('foreign_country_djibouti'), status: t('foreign_status_critical'), summary: t('foreign_summary_djibouti'), color: '#10b981' },
     ];
 
+    const handleOpenCable = async () => {
+        if (!selectedNation) return;
+        setShowCable(true);
+        setLoadingCable(true);
+        setCableContent('');
+        
+        try {
+            const content = await draftSRSCommunication(
+                "Ministry of Defense HQ (Addis Ababa)", 
+                `Subject: ${selectedNation.name} Strategic Update. 
+                Current Status: ${selectedNation.status}. 
+                Context: ${selectedNation.summary}. 
+                Include recent developments, military cooperation items, and a classified assessment of the relationship stability.`, 
+                "Strictly Confidential Diplomatic Cable (Military Attaché Channel)"
+            );
+            setCableContent(content);
+        } catch (e) {
+            setCableContent(":: ERROR :: SECURE CHANNEL HANDSHAKE FAILED. CABLE RETRIEVAL ABORTED.");
+        }
+        setLoadingCable(false);
+    };
+
+    const handleSigmaStressTest = async () => {
+        if (!selectedNation) return;
+        setSigmaLoading(true);
+        setSigmaAnalysis(null);
+
+        try {
+            const prompt = `Conduct a rigorous stress-test on the diplomatic and military relationship between Ethiopia and ${selectedNation.name}. 
+            Identify 'Fracture Points', 'Leverage Opportunities', and 'Hidden Risks'. 
+            Assume the role of Agent Sigma (Adversarial/De-Integrator) looking for weaknesses in the alliance.`;
+            
+            const resultStr = await runStrategySimulation(prompt, 'sigma', language, {
+                worldModelFocus: 'Geopolitical & Economic',
+                timeHorizon: '180 Days'
+            });
+
+            let parsed;
+            try {
+                const clean = resultStr.replace(/^```json/, '').replace(/```$/, '').trim();
+                parsed = JSON.parse(clean);
+            } catch (e) {
+                parsed = { summary: resultStr, title: "Stress Test Output" };
+            }
+            setSigmaAnalysis(parsed);
+        } catch (e) {
+            console.error(e);
+        }
+        setSigmaLoading(false);
+    };
+
     return (
-        <div className="space-y-6 animate-in fade-in duration-500 flex flex-col h-[calc(100vh-140px)]">
-            <div className="flex justify-between items-center mb-2 flex-shrink-0">
+        <div className="space-y-6 animate-in fade-in duration-500 flex flex-col h-full">
+            <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-2 flex-shrink-0">
                 <div>
                     <h2 className="text-2xl font-bold text-white tracking-tight font-display">{t('foreign_title')}</h2>
-                    <p className="text-gray-400 text-sm font-sans">{t('foreign_subtitle')}</p>
+                    <p className="text-gray-400 text-xs font-sans">{t('foreign_subtitle')}</p>
                 </div>
                 {onBack && (
                     <button 
                         onClick={onBack}
-                        className="p-2 text-gray-400 hover:text-white hover:bg-military-700 rounded transition-colors"
+                        className="mt-4 md:mt-0 p-2 text-gray-400 hover:text-white hover:bg-military-700 rounded transition-colors"
                         title="Exit / Back"
                     >
-                        <X size={20} />
+                        <X size={16} />
                     </button>
                 )}
             </div>
@@ -91,7 +159,7 @@ const ForeignRelationsView: React.FC<ForeignRelationsViewProps> = ({ onBack }) =
                          {mapPoints.map((point) => (
                              <g 
                                 key={point.id} 
-                                onClick={() => setSelectedNation(point)}
+                                onClick={() => { setSelectedNation(point); setSigmaAnalysis(null); }}
                                 className="cursor-pointer hover:opacity-100 transition-opacity"
                              >
                                  <circle 
@@ -118,11 +186,11 @@ const ForeignRelationsView: React.FC<ForeignRelationsViewProps> = ({ onBack }) =
                      </svg>
                 </div>
 
-                <div className="space-y-6">
+                <div className="space-y-6 flex flex-col h-full overflow-y-auto">
                     {/* Selected Nation Detail */}
-                    <div className="bg-military-800 rounded-lg p-6 border border-military-700 h-1/3 flex flex-col justify-center">
+                    <div className="bg-military-800 rounded-lg p-6 border border-military-700 flex flex-col justify-start flex-shrink-0 min-h-[300px]">
                         {selectedNation ? (
-                            <div className="animate-in fade-in slide-in-from-right-4 duration-300">
+                            <div className="animate-in fade-in slide-in-from-right-4 duration-300 flex flex-col h-full">
                                 <div className="flex items-center space-x-3 mb-4">
                                     <Globe size={24} style={{ color: selectedNation.color }} />
                                     <div>
@@ -133,29 +201,59 @@ const ForeignRelationsView: React.FC<ForeignRelationsViewProps> = ({ onBack }) =
                                 <div className="bg-military-900 p-3 rounded border border-military-600 mb-3">
                                     <p className="text-sm text-gray-300 font-sans">{selectedNation.summary}</p>
                                 </div>
-                                <div className="flex space-x-2">
+                                
+                                {/* Standard Actions */}
+                                <div className="flex space-x-2 mb-4">
                                     <button 
-                                        onClick={() => setShowCable(true)}
-                                        className="flex-1 bg-military-700 hover:bg-military-600 text-white text-xs py-2 rounded flex items-center justify-center font-bold"
+                                        onClick={handleOpenCable}
+                                        className="flex-1 bg-military-700 hover:bg-military-600 text-white text-xs py-2 rounded flex items-center justify-center font-bold border border-military-600"
                                     >
-                                        <Lock size={12} className="mr-1" /> Open Cable
+                                        <Lock size={12} className="mr-1" /> Secure Cable
                                     </button>
-                                    <button className="flex-1 bg-military-700 hover:bg-military-600 text-white text-xs py-2 rounded font-bold">Contact Attaché</button>
+                                </div>
+
+                                {/* Sigma Stress Test */}
+                                <div className="mt-auto border-t border-military-700 pt-4">
+                                    <button 
+                                        onClick={handleSigmaStressTest}
+                                        disabled={sigmaLoading}
+                                        className="w-full bg-red-900/30 hover:bg-red-900/50 text-red-300 text-xs py-2 rounded border border-red-500/50 flex items-center justify-center font-bold disabled:opacity-50"
+                                    >
+                                        {sigmaLoading ? <RefreshCw className="animate-spin mr-2" size={12}/> : <ShieldAlert className="mr-2" size={14}/>}
+                                        RUN SIGMA STRESS TEST
+                                    </button>
+
+                                    {sigmaAnalysis && (
+                                        <div className="mt-3 p-3 bg-red-950/40 rounded border border-red-500/30 animate-in fade-in slide-in-from-bottom-2">
+                                            <h4 className="text-[10px] font-bold text-red-400 uppercase mb-1 flex items-center">
+                                                <Zap size={10} className="mr-1"/> Fracture Point Identified
+                                            </h4>
+                                            <p className="text-[10px] text-gray-300 leading-relaxed">
+                                                <SafeRender content={sigmaAnalysis.psych_social_vector?.cultural_fault_line || sigmaAnalysis.summary} />
+                                            </p>
+                                            {sigmaAnalysis.legal_matrix && (
+                                                <div className="mt-2 pt-2 border-t border-red-900/30">
+                                                    <span className="text-[9px] text-red-300 block font-bold">EXPLOIT VECTOR:</span>
+                                                    <span className="text-[9px] text-gray-400"><SafeRender content={sigmaAnalysis.legal_matrix.mechanism} /></span>
+                                                </div>
+                                            )}
+                                        </div>
+                                    )}
                                 </div>
                             </div>
                         ) : (
-                            <div className="text-center text-gray-500">
+                            <div className="text-center text-gray-500 h-full flex flex-col items-center justify-center">
                                 <Info size={40} className="mx-auto mb-2 opacity-20" />
                                 <p className="text-sm uppercase tracking-widest font-mono">Select a region on the map</p>
                             </div>
                         )}
                     </div>
 
-                    <div className="bg-military-800 rounded-lg p-6 border border-military-700 flex-1">
+                    <div className="bg-military-800 rounded-lg p-6 border border-military-700 flex-1 overflow-y-auto">
                         <h3 className="font-semibold text-lg text-white mb-4 flex items-center font-display">
                             <Users className="mr-2 text-purple-500" size={20} /> {t('foreign_attaches_list')}
                         </h3>
-                        <div className="space-y-3 overflow-y-auto max-h-[250px] pr-2">
+                        <div className="space-y-3">
                             {attaches.map((att, i) => (
                                 <div key={i} className="flex justify-between items-center p-3 bg-military-900 rounded border border-military-600">
                                     <div>
@@ -180,13 +278,21 @@ const ForeignRelationsView: React.FC<ForeignRelationsViewProps> = ({ onBack }) =
                             <span>TOP SECRET // NOFORN</span>
                             <button onClick={() => setShowCable(false)} className="hover:text-gray-300"><X size={14}/></button>
                         </div>
-                        <div className="p-8 text-sm leading-relaxed whitespace-pre-wrap relative">
+                        <div className="p-8 text-sm leading-relaxed whitespace-pre-wrap relative min-h-[300px]">
                             <div className="absolute inset-0 flex items-center justify-center opacity-[0.05] pointer-events-none">
                                 <Lock size={200} />
                             </div>
                             <p className="mb-4"><strong>TO:</strong> MINISTRY OF DEFENSE</p>
                             <p className="mb-6"><strong>FROM:</strong> {selectedNation.name.toUpperCase()} STATION</p>
-                            <p>{selectedNation.cable}</p>
+                            
+                            {loadingCable ? (
+                                <div className="flex flex-col items-center justify-center h-40 text-gray-500">
+                                    <RefreshCw className="animate-spin mb-2" size={24} />
+                                    <p className="text-xs">DECRYPTING SECURE FEED...</p>
+                                </div>
+                            ) : (
+                                <p className="animate-in fade-in slide-in-from-bottom-2">{cableContent}</p>
+                            )}
                         </div>
                         <div className="p-4 border-t border-gray-300 text-center">
                             <button 

@@ -23,36 +23,36 @@ const NavyView: React.FC<NavyViewProps> = ({ onBack }) => {
     ];
 
     return (
-        <div className="space-y-6 animate-in fade-in duration-500 flex flex-col h-[calc(100vh-140px)]">
+        <div className="space-y-6 animate-in fade-in duration-500 flex flex-col h-full">
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-2 flex-shrink-0">
                 <div>
                     <h2 className="text-2xl font-bold text-white tracking-tight font-display">{t('navy_title')} (Reconstituting)</h2>
-                    <p className="text-gray-400 text-sm font-sans">Cmdr: Rear Admiral Kindu Gezu • HQ: Addis/Bishoftu</p>
+                    <p className="text-gray-400 text-xs font-sans">Cmdr: Rear Admiral Kindu Gezu • HQ: Addis/Bishoftu</p>
                 </div>
                 <div className="mt-4 md:mt-0 bg-military-800 p-1 rounded-lg border border-military-700 flex flex-wrap gap-1">
                     <button 
                         onClick={() => setActiveTab('strat_org')} 
-                        className={`px-4 py-1.5 text-xs font-bold rounded flex items-center transition-all ${activeTab === 'strat_org' ? 'bg-blue-600 text-white shadow' : 'text-gray-400 hover:text-white'}`}
+                        className={`px-4 py-1.5 text-[10px] font-bold rounded flex items-center transition-all ${activeTab === 'strat_org' ? 'bg-blue-600 text-white shadow' : 'text-gray-400 hover:text-white'}`}
                     >
-                        <Map size={14} className="mr-2"/> I. STRAT & ORG
+                        <Map size={12} className="mr-2"/> I. STRAT
                     </button>
                     <button 
                         onClick={() => setActiveTab('fleet_tiers')} 
-                        className={`px-4 py-1.5 text-xs font-bold rounded flex items-center transition-all ${activeTab === 'fleet_tiers' ? 'bg-blue-600 text-white shadow' : 'text-gray-400 hover:text-white'}`}
+                        className={`px-4 py-1.5 text-[10px] font-bold rounded flex items-center transition-all ${activeTab === 'fleet_tiers' ? 'bg-blue-600 text-white shadow' : 'text-gray-400 hover:text-white'}`}
                     >
-                        <Ship size={14} className="mr-2"/> II. FLEET TIERS
+                        <Ship size={12} className="mr-2"/> II. FLEET
                     </button>
                     <button 
                         onClick={() => setActiveTab('ops_personnel')} 
-                        className={`px-4 py-1.5 text-xs font-bold rounded flex items-center transition-all ${activeTab === 'ops_personnel' ? 'bg-blue-600 text-white shadow' : 'text-gray-400 hover:text-white'}`}
+                        className={`px-4 py-1.5 text-[10px] font-bold rounded flex items-center transition-all ${activeTab === 'ops_personnel' ? 'bg-blue-600 text-white shadow' : 'text-gray-400 hover:text-white'}`}
                     >
-                        <Users size={14} className="mr-2"/> III. OPS & PERS
+                        <Users size={12} className="mr-2"/> III. OPS
                     </button>
                     <button 
                         onClick={() => setActiveTab('future_alliances')} 
-                        className={`px-4 py-1.5 text-xs font-bold rounded flex items-center transition-all ${activeTab === 'future_alliances' ? 'bg-blue-600 text-white shadow' : 'text-gray-400 hover:text-white'}`}
+                        className={`px-4 py-1.5 text-[10px] font-bold rounded flex items-center transition-all ${activeTab === 'future_alliances' ? 'bg-blue-600 text-white shadow' : 'text-gray-400 hover:text-white'}`}
                     >
-                        <Globe size={14} className="mr-2"/> IV. FUTURE
+                        <Globe size={12} className="mr-2"/> IV. FUTURE
                     </button>
                     {onBack && (
                         <button 
@@ -60,7 +60,7 @@ const NavyView: React.FC<NavyViewProps> = ({ onBack }) => {
                             className="p-2 text-gray-400 hover:text-white hover:bg-military-700 rounded transition-colors"
                             title="Exit / Back"
                         >
-                            <X size={20} />
+                            <X size={16} />
                         </button>
                     )}
                 </div>
@@ -117,7 +117,7 @@ const NavyView: React.FC<NavyViewProps> = ({ onBack }) => {
                         </div>
 
                         {/* Strategic Goals */}
-                        <div className="bg-military-800 rounded-lg p-6 border border-military-700 flex flex-col">
+                        <div className="bg-military-800 rounded-lg p-6 border border-military-700 flex flex-col h-full overflow-y-auto">
                             <h3 className="font-semibold text-lg text-white mb-4 flex items-center">
                                 <Target className="mr-2 text-blue-500" size={20} /> Core Objectives
                             </h3>
@@ -142,17 +142,17 @@ const NavyView: React.FC<NavyViewProps> = ({ onBack }) => {
                 {/* TAB 2: FLEET TIERS */}
                 {activeTab === 'fleet_tiers' && (
                     <div className="h-full grid grid-cols-1 lg:grid-cols-2 gap-6 overflow-y-auto lg:overflow-hidden">
-                        <div className="bg-military-800 rounded-lg p-6 border border-military-700 h-96 lg:h-auto">
-                            <h3 className="font-semibold text-lg text-white mb-6 flex items-center">
+                        <div className="bg-military-800 rounded-lg p-6 border border-military-700 h-full min-h-[300px]">
+                            <h3 className="font-semibold text-lg text-white mb-6 flex items-center flex-shrink-0">
                                 <Ship className="mr-2 text-blue-500" size={20} /> Current Fleet Strength
                             </h3>
-                            <div className="h-64 w-full">
+                            <div className="flex-1 w-full">
                                 <ResponsiveContainer width="100%" height="100%">
                                     <BarChart data={fleetData} layout="vertical" margin={{ left: 20 }}>
                                         <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="#334155" />
                                         <XAxis type="number" stroke="#94a3b8" fontSize={10} />
                                         <YAxis dataKey="name" type="category" width={100} stroke="#94a3b8" fontSize={11} />
-                                        <Tooltip contentStyle={{ backgroundColor: '#1e293b', border: '1px solid #475569' }} cursor={{fill: 'transparent'}} />
+                                        <Tooltip contentStyle={{ backgroundColor: '#1e293b', border: '1px solid #475569', fontSize: '11px' }} cursor={{fill: 'transparent'}} />
                                         <Bar dataKey="active" stackId="a" fill="#3b82f6" name="Active" />
                                         <Bar dataKey="maint" stackId="a" fill="#eab308" name="Maintenance" />
                                     </BarChart>
@@ -160,7 +160,7 @@ const NavyView: React.FC<NavyViewProps> = ({ onBack }) => {
                             </div>
                         </div>
 
-                        <div className="space-y-6">
+                        <div className="space-y-6 flex flex-col h-full overflow-y-auto">
                             <div className="bg-military-800 rounded-lg p-6 border border-military-700">
                                 <h3 className="font-semibold text-lg text-white mb-4">Acquisition Roadmap</h3>
                                 <div className="space-y-3">
@@ -187,7 +187,7 @@ const NavyView: React.FC<NavyViewProps> = ({ onBack }) => {
                 {/* TAB 3: OPS & PERSONNEL */}
                 {activeTab === 'ops_personnel' && (
                     <div className="h-full grid grid-cols-1 lg:grid-cols-2 gap-6 overflow-y-auto lg:overflow-hidden">
-                        <div className="bg-military-800 rounded-lg p-6 border border-military-700 h-96 lg:h-auto">
+                        <div className="bg-military-800 rounded-lg p-6 border border-military-700 h-full flex flex-col">
                             <h3 className="font-semibold text-lg text-white mb-4 flex items-center">
                                 <GraduationCap className="mr-2 text-yellow-500" size={20} /> Naval Education Center
                             </h3>
@@ -203,12 +203,12 @@ const NavyView: React.FC<NavyViewProps> = ({ onBack }) => {
                                 </div>
                             </div>
                         </div>
-                        <div className="bg-military-800 rounded-lg p-6 border border-military-700">
+                        <div className="bg-military-800 rounded-lg p-6 border border-military-700 h-full flex flex-col">
                             <h3 className="font-semibold text-lg text-white mb-4 flex items-center">
                                 <Activity className="mr-2 text-green-500" size={20} /> Operational Readiness
                             </h3>
                             <div className="w-full bg-military-900 rounded-full h-4 mb-2">
-                                <div className="bg-yellow-500 h-4 rounded-full text-xs text-black text-center font-bold" style={{width: '65%'}}>65% INITIAL OPERATIONAL CAPABILITY</div>
+                                <div className="bg-yellow-500 h-4 rounded-full text-xs text-black text-center font-bold flex items-center justify-center" style={{width: '65%'}}>65% INITIAL CAPABILITY</div>
                             </div>
                             <p className="text-xs text-gray-400 mt-2">Currently limited to inland water bodies and cooperative training missions abroad.</p>
                         </div>
@@ -218,7 +218,7 @@ const NavyView: React.FC<NavyViewProps> = ({ onBack }) => {
                 {/* TAB 4: FUTURE & ALLIANCES */}
                 {activeTab === 'future_alliances' && (
                     <div className="h-full grid grid-cols-1 lg:grid-cols-2 gap-6 overflow-y-auto lg:overflow-hidden">
-                        <div className="bg-military-800 rounded-lg p-6 border border-military-700">
+                        <div className="bg-military-800 rounded-lg p-6 border border-military-700 h-full overflow-y-auto">
                             <h3 className="font-semibold text-lg text-white mb-6 flex items-center">
                                 <Handshake className="mr-2 text-blue-500" size={20} /> Strategic Partnerships
                             </h3>
@@ -237,7 +237,7 @@ const NavyView: React.FC<NavyViewProps> = ({ onBack }) => {
                                 </div>
                             </div>
                         </div>
-                        <div className="bg-military-800 rounded-lg p-6 border border-military-700">
+                        <div className="bg-military-800 rounded-lg p-6 border border-military-700 h-full overflow-y-auto">
                             <h3 className="font-semibold text-lg text-white mb-6 flex items-center">
                                 <TrendingUp className="mr-2 text-purple-500" size={20} /> 2030 Vision
                             </h3>

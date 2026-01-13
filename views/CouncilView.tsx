@@ -4,15 +4,30 @@ import { Briefcase, Users, Calendar, Network, FileText, CheckCircle, Video, Play
 import MetricCard from '../components/MetricCard';
 import { useLanguage } from '../contexts/LanguageContext';
 import { ResponsiveContainer, RadarChart, PolarGrid, PolarAngleAxis, Radar, Tooltip, BarChart, Bar, XAxis, YAxis, CartesianGrid, Legend } from 'recharts';
+import { runStrategySimulation } from '../services/aiService';
 
 interface CouncilViewProps {
     onBack?: () => void;
 }
 
+// Safe Render Helper
+const SafeRender = ({ content }: { content: any }) => {
+    if (typeof content === 'string' || typeof content === 'number') return <>{content}</>;
+    if (typeof content === 'object' && content !== null) {
+        if (content.value) return <>{content.value}</>;
+        return <>{JSON.stringify(content)}</>;
+    }
+    return null;
+};
+
 const CouncilView: React.FC<CouncilViewProps> = ({ onBack }) => {
-    const { t } = useLanguage();
+    const { t, language } = useLanguage();
     const [activeTab, setActiveTab] = useState<'center' | 'meet' | 'integ' | 'decisions' | 'idscn'>('center');
-    const [simOutcome, setSimOutcome] = useState<string | null>(null);
+    
+    // IDSCN State
+    const [simOutcome, setSimOutcome] = useState<any | null>(null);
+    const [simulating, setSimulating] = useState(false);
+    const [selectedProposal, setSelectedProposal] = useState('Increase Border Budget');
 
     const integData = [
         { subject: 'Ground-Air', A: 92, fullMark: 100 },
@@ -29,19 +44,37 @@ const CouncilView: React.FC<CouncilViewProps> = ({ onBack }) => {
         { name: 'Lt. Col. Dawit', aiScore: 78, humanScore: 95 },
     ];
 
-    const handleSimulate = () => {
-        setSimOutcome("Analyzing...");
-        setTimeout(() => {
-            setSimOutcome("Projected Impact: +10% Logistics Efficiency, -5% Troop Morale (Short Term)");
-        }, 1500);
+    const handleSimulate = async () => {
+        setSimulating(true);
+        setSimOutcome(null);
+        try {
+            const resultStr = await runStrategySimulation(
+                `Simulate the strategic impact of this council decision: ${selectedProposal}. Focus on budget, morale, and readiness.`, 
+                'alpha', 
+                language, 
+                { timeHorizon: '180 Days' }
+            );
+            
+            let parsed;
+            try {
+                const clean = resultStr.replace(/^```json/, '').replace(/```$/, '').trim();
+                parsed = JSON.parse(clean);
+            } catch (e) {
+                parsed = { summary: resultStr };
+            }
+            setSimOutcome(parsed);
+        } catch (e) {
+            setSimOutcome({ summary: "Simulation Failed." });
+        }
+        setSimulating(false);
     };
 
     return (
-        <div className="space-y-6 animate-in fade-in duration-500 flex flex-col h-[calc(100vh-140px)]">
+        <div className="space-y-6 animate-in fade-in duration-500 flex flex-col h-full">
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-2 flex-shrink-0">
                 <div>
                     <h2 className="text-2xl font-bold text-white tracking-tight font-display">{t('council_title')}</h2>
-                    <p className="text-gray-400 text-sm font-sans">{t('council_subtitle')}</p>
+                    <p className="text-gray-400 text-xs font-sans">{t('council_subtitle')}</p>
                 </div>
                 
                 <div className="mt-4 md:mt-0 flex flex-wrap gap-2 items-center">
@@ -136,7 +169,7 @@ const CouncilView: React.FC<CouncilViewProps> = ({ onBack }) => {
                             </div>
                         </div>
 
-                        <div className="flex flex-col gap-6">
+                        <div className="flex flex-col gap-6 h-full overflow-y-auto">
                             <div className="bg-military-800 rounded-lg p-6 border border-military-700 flex-1">
                                 <h3 className="font-bold text-white mb-4 flex items-center"><Radio className="mr-2 text-purple-500" size={16}/> Active Channels</h3>
                                 <div className="space-y-3">
@@ -186,20 +219,52 @@ const CouncilView: React.FC<CouncilViewProps> = ({ onBack }) => {
                                     <Calculator className="mr-2 text-indigo-500" size={20} /> {t('council_idscn_sim')}
                                 </h3>
                                 <div className="space-y-4">
-                                    <select className="w-full bg-military-900 border border-military-600 rounded p-2 text-sm text-white">
+                                    <label className="text-xs text-gray-400 block mb-1 font-bold">PROPOSAL SELECTOR</label>
+                                    <select 
+                                        className="w-full bg-military-900 border border-military-600 rounded p-2 text-sm text-white"
+                                        value={selectedProposal}
+                                        onChange={(e) => setSelectedProposal(e.target.value)}
+                                    >
                                         <option>Increase Border Budget</option>
                                         <option>Deploy Rapid Response to East</option>
                                         <option>Cyber Offensive: Sector 9</option>
+                                        <option>Force Modernization Procurement</option>
                                     </select>
                                     <button 
                                         onClick={handleSimulate}
-                                        className="w-full bg-indigo-600 hover:bg-indigo-700 text-white py-2 rounded text-xs font-bold"
+                                        disabled={simulating}
+                                        className="w-full bg-indigo-600 hover:bg-indigo-700 text-white py-2 rounded text-xs font-bold disabled:opacity-50 flex justify-center items-center"
                                     >
-                                        RUN SIMULATION
+                                        {simulating ? "RUNNING AGENT ALPHA..." : "RUN STRATEGIC SIMULATION"}
                                     </button>
+                                    
                                     {simOutcome && (
-                                        <div className="p-3 bg-indigo-900/30 border border-indigo-500/50 rounded text-xs text-indigo-200 animate-pulse">
-                                            {simOutcome}
+                                        <div className="p-4 bg-indigo-900/30 border border-indigo-500/50 rounded animate-in fade-in slide-in-from-bottom-2">
+                                            <h4 className="text-xs font-bold text-indigo-300 mb-2 uppercase">Projection Result</h4>
+                                            <p className="text-xs text-indigo-100 leading-relaxed"><SafeRender content={simOutcome.summary} /></p>
+                                            
+                                            {simOutcome.cross_domain_matrix && (
+                                                <div className="grid grid-cols-3 gap-2 mt-3 pt-3 border-t border-indigo-500/30 text-[10px]">
+                                                    <div className="text-center">
+                                                        <span className="block text-gray-400">Morale</span>
+                                                        <span className={`font-bold ${simOutcome.cross_domain_matrix.domestic_morale > 0 ? 'text-green-400' : 'text-red-400'}`}>
+                                                            {simOutcome.cross_domain_matrix.domestic_morale > 0 ? '+' : ''}<SafeRender content={simOutcome.cross_domain_matrix.domestic_morale} />
+                                                        </span>
+                                                    </div>
+                                                    <div className="text-center">
+                                                        <span className="block text-gray-400">Budget</span>
+                                                        <span className={`font-bold ${simOutcome.cross_domain_matrix.economic_cost < 0 ? 'text-red-400' : 'text-green-400'}`}>
+                                                            <SafeRender content={simOutcome.cross_domain_matrix.economic_cost} />
+                                                        </span>
+                                                    </div>
+                                                    <div className="text-center">
+                                                        <span className="block text-gray-400">Readiness</span>
+                                                        <span className={`font-bold ${simOutcome.cross_domain_matrix.military_readiness > 0 ? 'text-green-400' : 'text-yellow-400'}`}>
+                                                            {simOutcome.cross_domain_matrix.military_readiness > 0 ? '+' : ''}<SafeRender content={simOutcome.cross_domain_matrix.military_readiness} />
+                                                        </span>
+                                                    </div>
+                                                </div>
+                                            )}
                                         </div>
                                     )}
                                 </div>
@@ -228,11 +293,11 @@ const CouncilView: React.FC<CouncilViewProps> = ({ onBack }) => {
                         </div>
 
                         {/* Promotion Board */}
-                        <div className="bg-military-800 rounded-lg p-6 border border-military-700 flex flex-col h-96 lg:h-auto">
-                            <h3 className="font-semibold text-lg text-white mb-4 flex items-center">
+                        <div className="bg-military-800 rounded-lg p-6 border border-military-700 flex flex-col h-96 lg:h-full">
+                            <h3 className="font-semibold text-lg text-white mb-4 flex items-center flex-shrink-0">
                                 <UserCheck className="mr-2 text-yellow-500" size={20} /> {t('council_idscn_promo')}
                             </h3>
-                            <p className="text-xs text-gray-400 mb-4">Weighting: 70% AI Scoring + 30% Council Evaluation</p>
+                            <p className="text-xs text-gray-400 mb-4 flex-shrink-0">Weighting: 70% AI Scoring + 30% Council Evaluation</p>
                             
                             <div className="flex-1 w-full min-h-[300px]">
                                 <ResponsiveContainer width="100%" height="100%">
@@ -247,7 +312,7 @@ const CouncilView: React.FC<CouncilViewProps> = ({ onBack }) => {
                                     </BarChart>
                                 </ResponsiveContainer>
                             </div>
-                            <div className="mt-4 text-center">
+                            <div className="mt-4 text-center flex-shrink-0">
                                 <button className="bg-yellow-600 hover:bg-yellow-700 text-white px-6 py-2 rounded font-bold text-xs">APPROVE PROMOTIONS</button>
                             </div>
                         </div>
@@ -257,7 +322,7 @@ const CouncilView: React.FC<CouncilViewProps> = ({ onBack }) => {
                 {/* 11.1.2 Council Meeting Management System */}
                 {activeTab === 'meet' && (
                     <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 h-full overflow-y-auto lg:overflow-hidden">
-                        <div className="bg-military-800 rounded-lg p-6 border border-military-700">
+                        <div className="bg-military-800 rounded-lg p-6 border border-military-700 h-full overflow-y-auto">
                             <h3 className="font-semibold text-lg text-white mb-6 flex items-center">
                                 <Calendar className="mr-2 text-blue-500" size={20} /> Scheduled Engagements
                             </h3>
@@ -296,7 +361,7 @@ const CouncilView: React.FC<CouncilViewProps> = ({ onBack }) => {
                             </div>
                         </div>
 
-                        <div className="bg-black rounded-lg border border-military-700 p-1 flex flex-col relative overflow-hidden min-h-[300px]">
+                        <div className="bg-black rounded-lg border border-military-700 p-1 flex flex-col relative overflow-hidden min-h-[300px] lg:h-full">
                             <div className="absolute top-4 left-4 z-10 bg-red-600 text-white text-[10px] font-bold px-2 py-1 rounded animate-pulse flex items-center">
                                 <Video size={12} className="mr-1" /> SECURE LINK: OFF-AIR
                             </div>
@@ -305,7 +370,7 @@ const CouncilView: React.FC<CouncilViewProps> = ({ onBack }) => {
                                     <Play size={32} className="ml-1" />
                                 </button>
                             </div>
-                            <div className="p-3 bg-military-900 border-t border-military-700 flex justify-between items-center text-xs text-gray-400">
+                            <div className="p-3 bg-military-900 border-t border-military-700 flex justify-between items-center text-xs text-gray-400 flex-shrink-0">
                                 <span>Encryption: AES-256-GCM (Quantum-Resistant)</span>
                                 <span>Bandwidth: 1.2 Gbps</span>
                             </div>
@@ -316,8 +381,8 @@ const CouncilView: React.FC<CouncilViewProps> = ({ onBack }) => {
                 {/* 11.1.3 Branch Integration Management */}
                 {activeTab === 'integ' && (
                     <div className="h-full flex flex-col lg:flex-row gap-6 overflow-y-auto lg:overflow-hidden">
-                        <div className="lg:w-1/2 bg-military-800 rounded-lg p-6 border border-military-700 h-96 lg:h-auto">
-                            <h3 className="font-semibold text-lg text-white mb-6 flex items-center">
+                        <div className="lg:w-1/2 bg-military-800 rounded-lg p-6 border border-military-700 h-96 lg:h-full">
+                            <h3 className="font-semibold text-lg text-white mb-6 flex items-center flex-shrink-0">
                                 <Layers className="mr-2 text-green-500" size={20} /> Interoperability Matrix
                             </h3>
                             <div className="h-full w-full pb-8">
@@ -332,7 +397,7 @@ const CouncilView: React.FC<CouncilViewProps> = ({ onBack }) => {
                             </div>
                         </div>
 
-                        <div className="lg:w-1/2 bg-military-800 rounded-lg p-6 border border-military-700 overflow-y-auto">
+                        <div className="lg:w-1/2 bg-military-800 rounded-lg p-6 border border-military-700 h-full overflow-y-auto">
                             <h3 className="font-semibold text-lg text-white mb-4">Live Synchronization Issues</h3>
                             <div className="space-y-3">
                                 <div className="p-3 bg-military-900 rounded border-l-4 border-yellow-500">

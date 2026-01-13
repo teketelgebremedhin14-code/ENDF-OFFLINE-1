@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { FileText, Download, Plus, Search, Filter, Loader, AlertTriangle, Check, MessageSquare, X } from 'lucide-react';
-import { generateReport } from '../services/ollamaService';
+import { generateReport } from '../services/aiService';
 import DocumentViewer from '../components/DocumentViewer';
 import { useLanguage } from '../contexts/LanguageContext';
 
@@ -87,7 +87,7 @@ const ReportsView: React.FC<ReportsViewProps> = ({ onBack, onFeedback }) => {
     );
 
     return (
-        <div className="space-y-6 animate-in fade-in duration-500 h-[calc(100vh-140px)] flex flex-col">
+        <div className="space-y-6 animate-in fade-in duration-500 h-full flex flex-col">
              <div className="flex flex-col md:flex-row justify-between items-start md:items-center flex-shrink-0">
                 <div>
                     <h2 className="text-2xl font-bold text-white tracking-tight">{t('rep_title')}</h2>

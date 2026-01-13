@@ -1,9 +1,10 @@
 
-import React, { useState } from 'react';
-import { FileSearch, CheckCircle, AlertTriangle, ClipboardList, Shield, XCircle, MapPin, Lock, Send, Hash, Activity, MessageSquare, BarChart2, Play, RefreshCw, X } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { FileSearch, CheckCircle, AlertTriangle, ClipboardList, Shield, XCircle, MapPin, Lock, Send, Hash, Activity, MessageSquare, BarChart2, Play, RefreshCw, X, BrainCircuit } from 'lucide-react';
 import MetricCard from '../components/MetricCard';
 import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, CartesianGrid, ScatterChart, Scatter, ZAxis } from 'recharts';
 import { useLanguage } from '../contexts/LanguageContext';
+import { getAIContextInsight } from '../services/aiService';
 
 const anomalyData = [
     { x: 10, y: 30, z: 200, name: 'Normal Ops' },
@@ -22,6 +23,7 @@ const InspectorGeneralView: React.FC<InspectorGeneralViewProps> = ({ onBack }) =
     const [activeTab, setActiveTab] = useState<'risk' | 'audit' | 'feedback' | 'compliance'>('risk');
     const [auditInProgress, setAuditInProgress] = useState(false);
     const [auditProgress, setAuditProgress] = useState(0);
+    const [aiFeedbackSummary, setAiFeedbackSummary] = useState<string | null>(null);
 
     const auditTrail = [
         { id: 'TX-9921', action: 'Budget Allocation: Sector 4', user: 'Gen. Abebaw', timestamp: '10:42:15', hash: '0x8f...2a1c', verified: true },
@@ -34,6 +36,17 @@ const InspectorGeneralView: React.FC<InspectorGeneralViewProps> = ({ onBack }) =
         { topic: 'Supplies', positive: 40, negative: 45 },
         { topic: 'Housing', positive: 55, negative: 20 },
     ];
+
+    useEffect(() => {
+        if (activeTab === 'feedback' && !aiFeedbackSummary) {
+            setAiFeedbackSummary("Analyzing anonymous reports...");
+            getAIContextInsight("Troop Morale & Feedback Sentiment", feedbackStats).then(result => {
+                setAiFeedbackSummary(result);
+            }).catch(() => {
+                setAiFeedbackSummary("Analysis failed.");
+            });
+        }
+    }, [activeTab]);
 
     const handleRunAudit = () => {
         setAuditInProgress(true);
@@ -51,37 +64,37 @@ const InspectorGeneralView: React.FC<InspectorGeneralViewProps> = ({ onBack }) =
     };
 
     return (
-        <div className="space-y-6 animate-in fade-in duration-500 flex flex-col h-[calc(100vh-140px)]">
+        <div className="space-y-6 animate-in fade-in duration-500 flex flex-col h-full">
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-2 flex-shrink-0">
                 <div>
                     <h2 className="text-2xl font-bold text-white tracking-tight font-display">{t('ig_title')}</h2>
-                    <p className="text-gray-400 text-sm font-sans">{t('ig_subtitle')}</p>
+                    <p className="text-gray-400 text-xs font-sans">{t('ig_subtitle')}</p>
                 </div>
                 <div className="mt-4 md:mt-0 flex flex-wrap gap-2 items-center">
                     <div className="bg-military-800 p-1 rounded-lg border border-military-700 flex flex-wrap gap-1">
                         <button 
                             onClick={() => setActiveTab('risk')}
-                            className={`px-4 py-1.5 text-xs font-bold rounded flex items-center transition-all ${activeTab === 'risk' ? 'bg-red-600 text-white shadow' : 'text-gray-400 hover:text-white'}`}
+                            className={`px-4 py-1.5 text-[10px] font-bold rounded flex items-center transition-all ${activeTab === 'risk' ? 'bg-red-600 text-white shadow' : 'text-gray-400 hover:text-white'}`}
                         >
-                            <MapPin size={14} className="mr-2"/> {t('ig_tab_risk')}
+                            <MapPin size={12} className="mr-2"/> {t('ig_tab_risk')}
                         </button>
                         <button 
                             onClick={() => setActiveTab('audit')}
-                            className={`px-4 py-1.5 text-xs font-bold rounded flex items-center transition-all ${activeTab === 'audit' ? 'bg-blue-600 text-white shadow' : 'text-gray-400 hover:text-white'}`}
+                            className={`px-4 py-1.5 text-[10px] font-bold rounded flex items-center transition-all ${activeTab === 'audit' ? 'bg-blue-600 text-white shadow' : 'text-gray-400 hover:text-white'}`}
                         >
-                            <Hash size={14} className="mr-2"/> {t('ig_tab_audit')}
+                            <Hash size={12} className="mr-2"/> {t('ig_tab_audit')}
                         </button>
                         <button 
                             onClick={() => setActiveTab('feedback')}
-                            className={`px-4 py-1.5 text-xs font-bold rounded flex items-center transition-all ${activeTab === 'feedback' ? 'bg-purple-600 text-white shadow' : 'text-gray-400 hover:text-white'}`}
+                            className={`px-4 py-1.5 text-[10px] font-bold rounded flex items-center transition-all ${activeTab === 'feedback' ? 'bg-purple-600 text-white shadow' : 'text-gray-400 hover:text-white'}`}
                         >
-                            <MessageSquare size={14} className="mr-2"/> {t('ig_feedback_analysis')}
+                            <MessageSquare size={12} className="mr-2"/> {t('ig_feedback_analysis')}
                         </button>
                         <button 
                             onClick={() => setActiveTab('compliance')}
-                            className={`px-4 py-1.5 text-xs font-bold rounded flex items-center transition-all ${activeTab === 'compliance' ? 'bg-green-600 text-white shadow' : 'text-gray-400 hover:text-white'}`}
+                            className={`px-4 py-1.5 text-[10px] font-bold rounded flex items-center transition-all ${activeTab === 'compliance' ? 'bg-green-600 text-white shadow' : 'text-gray-400 hover:text-white'}`}
                         >
-                            <CheckCircle size={14} className="mr-2"/> {t('ig_tab_compliance')}
+                            <CheckCircle size={12} className="mr-2"/> {t('ig_tab_compliance')}
                         </button>
                     </div>
                     {onBack && (
@@ -90,7 +103,7 @@ const InspectorGeneralView: React.FC<InspectorGeneralViewProps> = ({ onBack }) =
                             className="p-2 text-gray-400 hover:text-white hover:bg-military-700 rounded transition-colors"
                             title="Exit / Back"
                         >
-                            <X size={20} />
+                            <X size={16} />
                         </button>
                     )}
                 </div>
@@ -109,18 +122,18 @@ const InspectorGeneralView: React.FC<InspectorGeneralViewProps> = ({ onBack }) =
                 {activeTab === 'risk' && (
                     <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 h-full">
                         <div className="bg-military-800 rounded-lg p-6 border border-military-700 flex flex-col">
-                            <h3 className="font-semibold text-lg text-white mb-4 flex items-center">
+                            <h3 className="font-semibold text-lg text-white mb-4 flex items-center flex-shrink-0">
                                 <AlertTriangle className="mr-2 text-red-500" size={20} /> {t('ig_anomaly_detect')}
                             </h3>
-                            <p className="text-xs text-gray-400 mb-4">Visualizing unusual patterns in spending vs. delivery time (AOIM Engine).</p>
-                            <div className="flex-1 min-h-[250px]">
+                            <p className="text-xs text-gray-400 mb-4 flex-shrink-0">Visualizing unusual patterns in spending vs. delivery time (AOIM Engine).</p>
+                            <div className="flex-1 min-h-[250px] w-full">
                                 <ResponsiveContainer width="100%" height="100%">
                                     <ScatterChart margin={{ top: 20, right: 20, bottom: 20, left: 20 }}>
                                         <CartesianGrid strokeDasharray="3 3" stroke="#334155" />
                                         <XAxis type="number" dataKey="x" name="Cost" unit="k" stroke="#94a3b8" fontSize={10} />
                                         <YAxis type="number" dataKey="y" name="Time" unit="d" stroke="#94a3b8" fontSize={10} />
                                         <ZAxis type="number" dataKey="z" range={[50, 400]} name="Volume" />
-                                        <Tooltip cursor={{ strokeDasharray: '3 3' }} contentStyle={{ backgroundColor: '#1e293b', border: '1px solid #475569' }} />
+                                        <Tooltip cursor={{ strokeDasharray: '3 3' }} contentStyle={{ backgroundColor: '#1e293b', border: '1px solid #475569', fontSize: '11px' }} />
                                         <Scatter name="Transactions" data={anomalyData} fill="#ef4444" shape="circle" />
                                     </ScatterChart>
                                 </ResponsiveContainer>
@@ -128,7 +141,7 @@ const InspectorGeneralView: React.FC<InspectorGeneralViewProps> = ({ onBack }) =
                         </div>
 
                         <div className="bg-military-800 rounded-lg p-6 border border-military-700 flex flex-col">
-                            <h3 className="font-semibold text-lg text-white mb-4 flex items-center">
+                            <h3 className="font-semibold text-lg text-white mb-4 flex items-center flex-shrink-0">
                                 <MapPin className="mr-2 text-red-500" size={20} /> Geospatial Risk Heatmap
                             </h3>
                             <div className="flex-1 bg-[#0f172a] rounded border border-military-700 relative overflow-hidden">
@@ -140,7 +153,7 @@ const InspectorGeneralView: React.FC<InspectorGeneralViewProps> = ({ onBack }) =
                                 <div className="absolute top-1/4 left-1/4">
                                     <div className="w-8 h-8 bg-red-500/20 rounded-full animate-ping absolute"></div>
                                     <div className="w-3 h-3 bg-red-500 rounded-full border border-white cursor-pointer relative z-10"></div>
-                                    <div className="absolute left-4 top-0 bg-black/80 px-2 py-1 rounded text-[10px] whitespace-nowrap border border-red-500">Logistics Hub B - High Risk</div>
+                                    <div className="absolute left-4 top-0 bg-black/80 px-2 py-1 rounded text-[10px] whitespace-nowrap border border-red-500 text-white">Logistics Hub B - High Risk</div>
                                 </div>
                                 <div className="absolute bottom-1/4 right-1/3">
                                     <div className="w-3 h-3 bg-green-500 rounded-full border border-white cursor-pointer"></div>
@@ -153,7 +166,7 @@ const InspectorGeneralView: React.FC<InspectorGeneralViewProps> = ({ onBack }) =
                 {/* 6.1 - Immutable Audit Trail */}
                 {activeTab === 'audit' && (
                     <div className="h-full bg-military-800 rounded-lg p-6 border border-military-700 flex flex-col">
-                        <div className="flex justify-between items-center mb-6">
+                        <div className="flex justify-between items-center mb-6 flex-shrink-0">
                             <h3 className="font-semibold text-lg text-white flex items-center">
                                 <Hash className="mr-2 text-blue-500" size={20} /> Immutable Audit Ledger (Blockchain)
                             </h3>
@@ -168,7 +181,7 @@ const InspectorGeneralView: React.FC<InspectorGeneralViewProps> = ({ onBack }) =
                         </div>
                         
                         {auditInProgress && (
-                            <div className="mb-6 p-4 bg-blue-900/10 border border-blue-500/30 rounded">
+                            <div className="mb-6 p-4 bg-blue-900/10 border border-blue-500/30 rounded flex-shrink-0">
                                 <div className="flex justify-between text-xs text-blue-300 mb-1">
                                     <span>Verifying Hashes...</span>
                                     <span>{auditProgress}%</span>
@@ -181,7 +194,7 @@ const InspectorGeneralView: React.FC<InspectorGeneralViewProps> = ({ onBack }) =
 
                         <div className="flex-1 overflow-y-auto">
                             <table className="w-full text-left text-sm text-gray-300">
-                                <thead className="bg-military-900 text-xs uppercase text-gray-500 font-display">
+                                <thead className="bg-military-900 text-xs uppercase text-gray-500 font-display sticky top-0">
                                     <tr>
                                         <th className="px-4 py-3">Transaction ID</th>
                                         <th className="px-4 py-3">Action</th>
@@ -220,31 +233,37 @@ const InspectorGeneralView: React.FC<InspectorGeneralViewProps> = ({ onBack }) =
                 {/* 6.1 - Feedback Engine */}
                 {activeTab === 'feedback' && (
                     <div className="h-full bg-military-800 rounded-lg p-6 border border-military-700 flex flex-col">
-                        <h3 className="font-semibold text-lg text-white mb-6 flex items-center">
+                        <h3 className="font-semibold text-lg text-white mb-6 flex items-center flex-shrink-0">
                             <MessageSquare className="mr-2 text-purple-500" size={20} /> {t('ig_feedback_analysis')}
                         </h3>
-                        <p className="text-xs text-gray-400 mb-6">Aggregated sentiment from "REPORT OF ENDF" secure channels.</p>
+                        <p className="text-xs text-gray-400 mb-6 flex-shrink-0">Aggregated sentiment from "REPORT OF ENDF" secure channels.</p>
                         
-                        <div className="flex-1 grid grid-cols-1 lg:grid-cols-2 gap-6">
-                            <div className="h-64">
+                        <div className="flex-1 grid grid-cols-1 lg:grid-cols-2 gap-6 min-h-0 overflow-y-auto">
+                            <div className="h-full min-h-[300px]">
                                 <ResponsiveContainer width="100%" height="100%">
                                     <BarChart data={feedbackStats} layout="vertical">
                                         <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="#334155" />
-                                        <XAxis type="number" stroke="#94a3b8" />
-                                        <YAxis dataKey="topic" type="category" width={80} stroke="#94a3b8" fontSize={12} />
-                                        <Tooltip cursor={{fill: 'transparent'}} contentStyle={{ backgroundColor: '#1e293b', border: '1px solid #475569' }} />
+                                        <XAxis type="number" stroke="#94a3b8" fontSize={10} />
+                                        <YAxis dataKey="topic" type="category" width={80} stroke="#94a3b8" fontSize={11} />
+                                        <Tooltip cursor={{fill: 'transparent'}} contentStyle={{ backgroundColor: '#1e293b', border: '1px solid #475569', fontSize: '11px' }} />
                                         <Bar dataKey="positive" fill="#10b981" name="Positive" stackId="a" barSize={20} />
                                         <Bar dataKey="negative" fill="#ef4444" name="Negative" stackId="a" barSize={20} />
                                     </BarChart>
                                 </ResponsiveContainer>
                             </div>
-                            <div className="bg-military-900 p-4 rounded border border-military-600">
-                                <h4 className="font-bold text-white text-sm mb-4">Key Insights</h4>
-                                <ul className="space-y-2 text-xs text-gray-300">
-                                    <li className="flex items-start"><AlertTriangle size={12} className="text-red-500 mr-2 mt-0.5"/> Supply chain delays in Sector 4 causing morale dip.</li>
-                                    <li className="flex items-start"><CheckCircle size={12} className="text-green-500 mr-2 mt-0.5"/> New housing initiative received positively by NCOs.</li>
-                                    <li className="flex items-start"><Activity size={12} className="text-yellow-500 mr-2 mt-0.5"/> Leadership communication gap identified in 3rd Division.</li>
-                                </ul>
+                            <div className="bg-military-900 p-4 rounded border border-military-600 h-full overflow-y-auto">
+                                <h4 className="font-bold text-white text-sm mb-4 flex items-center">
+                                    <BrainCircuit size={16} className="mr-2 text-purple-400" /> AI Insights
+                                </h4>
+                                {aiFeedbackSummary ? (
+                                    <p className="text-xs text-gray-300 leading-relaxed whitespace-pre-line animate-in fade-in">
+                                        {aiFeedbackSummary}
+                                    </p>
+                                ) : (
+                                    <div className="flex items-center justify-center h-full text-gray-500">
+                                        <RefreshCw className="animate-spin" size={20} />
+                                    </div>
+                                )}
                             </div>
                         </div>
                     </div>
@@ -252,7 +271,7 @@ const InspectorGeneralView: React.FC<InspectorGeneralViewProps> = ({ onBack }) =
 
                 {/* 6.1 - Automated Compliance */}
                 {activeTab === 'compliance' && (
-                    <div className="h-full bg-military-800 rounded-lg p-6 border border-military-700">
+                    <div className="h-full bg-military-800 rounded-lg p-6 border border-military-700 overflow-y-auto">
                         <h3 className="font-semibold text-lg text-white mb-6 flex items-center">
                             <Shield className="mr-2 text-green-500" size={20} /> Automated Legal Compliance Checker
                         </h3>

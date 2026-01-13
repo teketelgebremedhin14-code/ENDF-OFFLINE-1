@@ -72,31 +72,31 @@ const SpecialOpsView: React.FC<SpecialOpsViewProps> = ({ onBack }) => {
     };
 
     return (
-        <div className="space-y-6 animate-in fade-in duration-500 flex flex-col h-[calc(100vh-140px)]">
+        <div className="space-y-6 animate-in fade-in duration-500 flex flex-col h-full">
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-2 flex-shrink-0">
                 <div>
-                    <h2 className="text-2xl font-bold text-red-500 tracking-tight flex items-center">
+                    <h2 className="text-2xl font-bold text-red-500 tracking-tight flex items-center font-display">
                         <Crosshair className="mr-2" /> {t('spec_title')}
                     </h2>
-                    <p className="text-gray-500 text-sm uppercase tracking-widest">{t('spec_subtitle')}</p>
+                    <p className="text-gray-500 text-xs uppercase tracking-widest">{t('spec_subtitle')}</p>
                 </div>
                 <div className="mt-4 md:mt-0 flex flex-wrap gap-2 items-center">
                     <div className="flex space-x-2 bg-military-800 p-1 rounded-lg border border-military-700">
                         <button 
                             onClick={() => setActiveTab('agazi')}
-                            className={`px-4 py-1.5 text-xs font-bold rounded transition-all ${activeTab === 'agazi' ? 'bg-red-600 text-white' : 'text-gray-400 hover:text-white'}`}
+                            className={`px-4 py-1.5 text-[10px] font-bold rounded transition-all ${activeTab === 'agazi' ? 'bg-red-600 text-white' : 'text-gray-400 hover:text-white'}`}
                         >
                             AGAZI
                         </button>
                         <button 
                             onClick={() => setActiveTab('republican')}
-                            className={`px-4 py-1.5 text-xs font-bold rounded transition-all ${activeTab === 'republican' ? 'bg-blue-600 text-white' : 'text-gray-400 hover:text-white'}`}
+                            className={`px-4 py-1.5 text-[10px] font-bold rounded transition-all ${activeTab === 'republican' ? 'bg-blue-600 text-white' : 'text-gray-400 hover:text-white'}`}
                         >
                             REP. GUARD
                         </button>
                         <button 
                             onClick={() => setActiveTab('planner')}
-                            className={`px-4 py-1.5 text-xs font-bold rounded transition-all ${activeTab === 'planner' ? 'bg-yellow-600 text-white' : 'text-gray-400 hover:text-white'}`}
+                            className={`px-4 py-1.5 text-[10px] font-bold rounded transition-all ${activeTab === 'planner' ? 'bg-yellow-600 text-white' : 'text-gray-400 hover:text-white'}`}
                         >
                             <Edit3 size={12} className="mr-1 inline" /> {t('spec_tab_planning')}
                         </button>
@@ -128,7 +128,7 @@ const SpecialOpsView: React.FC<SpecialOpsViewProps> = ({ onBack }) => {
                             <div className="absolute inset-0 bg-green-500/10 mix-blend-multiply"></div>
                             
                             {/* HUD Elements */}
-                            <svg className="absolute inset-0 w-full h-full opacity-60">
+                            <svg className="absolute inset-0 w-full h-full opacity-60 pointer-events-none">
                                  <rect x="10%" y="10%" width="80%" height="80%" fill="none" stroke="#22c55e" strokeWidth="1" strokeDasharray="10 5" />
                                  <circle cx="50%" cy="50%" r="20" stroke="#22c55e" strokeWidth="1" fill="none" />
                                  <line x1="48%" y1="50%" x2="52%" y2="50%" stroke="#22c55e" strokeWidth="1" />
@@ -167,7 +167,7 @@ const SpecialOpsView: React.FC<SpecialOpsViewProps> = ({ onBack }) => {
                     </div>
 
                     {/* Target Profiles */}
-                    <div className="space-y-6 overflow-y-auto">
+                    <div className="space-y-6 overflow-y-auto h-full">
                         <div className="bg-military-800 rounded-lg p-4 border border-military-700">
                             <h3 className="font-bold text-white mb-4 flex items-center text-sm uppercase">
                                 <Target className="mr-2 text-red-500" size={16} /> {t('spec_objectives')}
@@ -267,7 +267,7 @@ const SpecialOpsView: React.FC<SpecialOpsViewProps> = ({ onBack }) => {
                             <div className="p-4 border-b border-military-700 bg-military-900/50">
                                 <h3 className="font-bold text-white text-sm flex items-center"><Lock size={16} className="mr-2 text-gray-400"/> Security Log</h3>
                             </div>
-                            <div className="p-4 space-y-3 font-mono text-xs overflow-y-auto flex-1">
+                            <div className="p-4 space-y-3 font-mono text-xs overflow-y-auto flex-1 custom-scrollbar">
                                 <div className="text-green-400">[10:42:15] Perimeter Shift Change Complete.</div>
                                 <div className="text-gray-400">[10:30:00] Convoy Alpha departed Bole Airport.</div>
                                 <div className="text-yellow-500">[10:15:22] Drone detection system triggered (False Positive - Bird).</div>

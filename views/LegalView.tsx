@@ -1,9 +1,10 @@
 
 import React, { useState } from 'react';
-import { Scale, FileText, CheckCircle, Gavel, Book, Search, Bookmark, AlertTriangle, Clock, User, File as FileIcon, X } from 'lucide-react';
+import { Scale, FileText, CheckCircle, Gavel, Book, Search, Bookmark, AlertTriangle, Clock, User, File as FileIcon, X, BrainCircuit, RefreshCw } from 'lucide-react';
 import MetricCard from '../components/MetricCard';
 import { ETHIOPIAN_LEGAL_FRAMEWORK } from '../data/legalDatabase';
 import { useLanguage } from '../contexts/LanguageContext';
+import { getAIContextInsight } from '../services/aiService';
 
 interface LegalViewProps {
     onBack?: () => void;
@@ -15,6 +16,10 @@ const LegalView: React.FC<LegalViewProps> = ({ onBack }) => {
     const [searchQuery, setSearchQuery] = useState('');
     const [selectedCase, setSelectedCase] = useState<string | null>(null);
     const [viewingArticle, setViewingArticle] = useState<any | null>(null);
+    
+    // AI Analysis State
+    const [aiAnalysis, setAiAnalysis] = useState<string | null>(null);
+    const [analyzing, setAnalyzing] = useState(false);
 
     const filteredDocs = ETHIOPIAN_LEGAL_FRAMEWORK.map(doc => ({
         ...doc,
@@ -39,8 +44,32 @@ const LegalView: React.FC<LegalViewProps> = ({ onBack }) => {
         { date: '2024-03-12', event: 'Court Martial Convened', desc: 'Panel selection complete. Hearing scheduled.', icon: Gavel, color: 'text-red-500' },
     ];
 
+    const handleAnalyzeArticle = async () => {
+        if(!viewingArticle) return;
+        setAnalyzing(true);
+        setAiAnalysis(null);
+        try {
+            const contentToAnalyze = language === 'am' && viewingArticle.content_am ? viewingArticle.content_am : viewingArticle.content;
+            const context = {
+                title: viewingArticle.title,
+                text: contentToAnalyze,
+                type: "Military Regulation / Law"
+            };
+            const result = await getAIContextInsight("Legal Provision Interpretation", context);
+            setAiAnalysis(result);
+        } catch (e) {
+            setAiAnalysis("AI Analysis Unavailable.");
+        }
+        setAnalyzing(false);
+    };
+
+    const closeArticleModal = () => {
+        setViewingArticle(null);
+        setAiAnalysis(null);
+    }
+
     return (
-        <div className="space-y-6 animate-in fade-in duration-500 flex flex-col h-[calc(100vh-140px)]">
+        <div className="space-y-6 animate-in fade-in duration-500 flex flex-col h-full">
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-2 flex-shrink-0">
                 <div>
                     <h2 className="text-2xl font-bold text-white tracking-tight">{t('legal_title')}</h2>
@@ -184,22 +213,55 @@ const LegalView: React.FC<LegalViewProps> = ({ onBack }) => {
                 </div>
             )}
 
-            {/* Article Modal */}
+            {/* Article Modal with AI Analysis */}
             {viewingArticle && (
                 <div className="fixed inset-0 bg-black/80 z-50 flex items-center justify-center p-4">
-                    <div className="bg-military-800 border border-military-600 rounded-lg w-full max-w-2xl shadow-2xl flex flex-col max-h-[80vh] animate-in zoom-in-95">
-                        <div className="p-4 border-b border-military-700 flex justify-between items-center">
+                    <div className="bg-military-800 border border-military-600 rounded-lg w-full max-w-2xl shadow-2xl flex flex-col max-h-[85vh] animate-in zoom-in-95">
+                        <div className="p-4 border-b border-military-700 flex justify-between items-center bg-military-900">
                              <div className="flex items-center space-x-2">
                                  <FileText size={20} className="text-military-accent" />
                                  <h3 className="font-bold text-white font-display text-lg">{viewingArticle.id}: {language === 'am' ? viewingArticle.title_am : viewingArticle.title}</h3>
                              </div>
-                             <button onClick={() => setViewingArticle(null)} className="text-gray-400 hover:text-white"><X size={20}/></button>
+                             <button onClick={closeArticleModal} className="text-gray-400 hover:text-white"><X size={20}/></button>
                         </div>
-                        <div className="p-6 overflow-y-auto font-serif leading-relaxed text-gray-200 whitespace-pre-wrap">
-                            {language === 'am' && viewingArticle.content_am ? viewingArticle.content_am : viewingArticle.content}
+                        
+                        <div className="p-6 overflow-y-auto flex-1">
+                            <div className="font-serif leading-relaxed text-gray-200 whitespace-pre-wrap mb-6">
+                                {language === 'am' && viewingArticle.content_am ? viewingArticle.content_am : viewingArticle.content}
+                            </div>
+
+                            {/* AI Analysis Section */}
+                            <div className="border-t border-military-700 pt-4 mt-4">
+                                <div className="flex items-center justify-between mb-3">
+                                    <h4 className="text-sm font-bold text-purple-400 flex items-center">
+                                        <BrainCircuit size={16} className="mr-2"/> AI Legal Assistant
+                                    </h4>
+                                    {!aiAnalysis && !analyzing && (
+                                        <button 
+                                            onClick={handleAnalyzeArticle}
+                                            className="text-xs bg-purple-600 hover:bg-purple-700 text-white px-3 py-1 rounded transition-colors"
+                                        >
+                                            Interpret Provision
+                                        </button>
+                                    )}
+                                </div>
+                                
+                                {analyzing && (
+                                    <div className="flex items-center text-xs text-purple-300 animate-pulse">
+                                        <RefreshCw size={12} className="mr-2 animate-spin"/> Analyzing legal context...
+                                    </div>
+                                )}
+
+                                {aiAnalysis && (
+                                    <div className="bg-purple-900/20 border border-purple-500/30 p-3 rounded text-xs text-purple-200 leading-relaxed animate-in fade-in">
+                                        {aiAnalysis}
+                                    </div>
+                                )}
+                            </div>
                         </div>
+                        
                         <div className="p-4 border-t border-military-700 bg-military-900/50 flex justify-end">
-                            <button onClick={() => setViewingArticle(null)} className="bg-military-700 hover:bg-military-600 text-white px-4 py-2 rounded text-xs font-bold">CLOSE</button>
+                            <button onClick={closeArticleModal} className="bg-military-700 hover:bg-military-600 text-white px-4 py-2 rounded text-xs font-bold">CLOSE</button>
                         </div>
                     </div>
                 </div>

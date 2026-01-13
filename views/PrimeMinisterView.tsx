@@ -64,41 +64,41 @@ const PrimeMinisterView: React.FC<PrimeMinisterViewProps> = ({ defcon, setDefcon
     };
 
     return (
-        <div className="space-y-6 animate-in fade-in duration-500 flex flex-col h-[calc(100vh-140px)]">
+        <div className="flex flex-col h-full space-y-4 animate-in fade-in duration-500">
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-2 flex-shrink-0">
                 <div>
                     <h2 className="text-2xl font-bold text-white tracking-tight font-display">{t('pm_title')}</h2>
-                    <p className="text-gray-400 text-sm font-sans">{t('pm_subtitle')}</p>
+                    <p className="text-gray-400 text-xs font-sans">{t('pm_subtitle')}</p>
                 </div>
                 
                 <div className="mt-4 md:mt-0 flex flex-wrap gap-2 items-center">
                     <div className="bg-military-800 p-1 rounded-lg border border-military-700 flex flex-wrap gap-1">
                         <button 
                             onClick={() => setActiveTab('strat')}
-                            className={`px-4 py-1.5 text-xs font-bold rounded flex items-center transition-all ${activeTab === 'strat' ? 'bg-blue-600 text-white shadow' : 'text-gray-400 hover:text-white'}`}
+                            className={`px-3 py-1.5 text-[10px] font-bold rounded flex items-center transition-all ${activeTab === 'strat' ? 'bg-blue-600 text-white shadow' : 'text-gray-400 hover:text-white'}`}
                         >
-                            <Globe size={14} className="mr-2"/> {t('pm_tab_strat')}
+                            <Globe size={12} className="mr-2"/> {t('pm_tab_strat')}
                         </button>
                         <button 
                             onClick={() => setActiveTab('nsc')}
-                            className={`px-4 py-1.5 text-xs font-bold rounded flex items-center transition-all ${activeTab === 'nsc' ? 'bg-purple-600 text-white shadow' : 'text-gray-400 hover:text-white'}`}
+                            className={`px-3 py-1.5 text-[10px] font-bold rounded flex items-center transition-all ${activeTab === 'nsc' ? 'bg-purple-600 text-white shadow' : 'text-gray-400 hover:text-white'}`}
                         >
-                            <ShieldAlert size={14} className="mr-2"/> {t('pm_tab_nsc')}
+                            <ShieldAlert size={12} className="mr-2"/> {t('pm_tab_nsc')}
                         </button>
                         <button 
                             onClick={() => setActiveTab('auth')}
-                            className={`px-4 py-1.5 text-xs font-bold rounded flex items-center transition-all ${activeTab === 'auth' ? 'bg-red-600 text-white shadow' : 'text-gray-400 hover:text-white'}`}
+                            className={`px-3 py-1.5 text-[10px] font-bold rounded flex items-center transition-all ${activeTab === 'auth' ? 'bg-red-600 text-white shadow' : 'text-gray-400 hover:text-white'}`}
                         >
-                            <Crown size={14} className="mr-2"/> {t('pm_tab_auth')}
+                            <Crown size={12} className="mr-2"/> {t('pm_tab_auth')}
                         </button>
                     </div>
                     {onBack && (
                         <button 
                             onClick={onBack}
-                            className="p-2 text-gray-400 hover:text-white hover:bg-military-700 rounded transition-colors"
+                            className="p-1.5 text-gray-400 hover:text-white hover:bg-military-700 rounded transition-colors"
                             title="Exit / Back"
                         >
-                            <X size={20} />
+                            <X size={16} />
                         </button>
                     )}
                 </div>

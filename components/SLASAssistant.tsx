@@ -1,7 +1,7 @@
 
 import React, { useState, useRef, useEffect } from 'react';
 import { Mic, Send, Bot, AlertCircle, StopCircle, Volume2, VolumeX, Radio, Activity, FileText, CheckSquare, Zap, Clock, X, ChevronDown, Camera, Image as ImageIcon } from 'lucide-react';
-import { streamSLASResponse, generateSpeech } from '../services/ollamaService';
+import { streamSLASResponse, generateSpeech } from '../services/aiService';
 import { ChatMessage } from '../types';
 import { useLanguage } from '../contexts/LanguageContext';
 
@@ -111,7 +111,7 @@ const SLASAssistant: React.FC<SLASAssistantProps> = ({ currentView }) => {
         }
     } catch (e) {
         setMessages(prev => prev.map(msg => 
-            msg.id === botMsgId ? { ...msg, text: "Error: Local AI Uplink Failed. Ensure Ollama is running." } : msg
+            msg.id === botMsgId ? { ...msg, text: "Error: AI Uplink Failed." } : msg
         ));
     } finally {
         setLoading(false);
@@ -134,9 +134,9 @@ const SLASAssistant: React.FC<SLASAssistantProps> = ({ currentView }) => {
                 <span className="font-bold text-sm tracking-wider font-display text-white">{t('slas_module_title')}</span>
               </div>
               <div className="flex items-center space-x-3">
-                  <span className="text-[10px] text-green-500 font-mono flex items-center">
-                      <div className="w-2 h-2 bg-green-500 rounded-full mr-1 animate-pulse"></div>
-                      LOCAL LLAMA-3
+                  <span className="text-[10px] text-purple-400 font-mono flex items-center">
+                      <div className="w-2 h-2 bg-purple-500 rounded-full mr-1 animate-pulse"></div>
+                      GEMINI 3 PRO
                   </span>
                   <button onClick={() => { setIsOpen(false); }} className="text-gray-400 hover:text-white p-2">
                       <ChevronDown size={24} className="md:hidden" />
@@ -204,7 +204,7 @@ const SLASAssistant: React.FC<SLASAssistantProps> = ({ currentView }) => {
                 <div className="bg-military-800 p-2 border-t border-military-700 flex items-center justify-between">
                     <div className="flex items-center">
                         <img src={capturedImage} alt="Captured" className="h-10 w-10 object-cover rounded border border-military-600" />
-                        <span className="ml-2 text-xs text-green-400 font-mono">[IMAGE READY - TEXT SIM]</span>
+                        <span className="ml-2 text-xs text-green-400 font-mono">[IMAGE READY]</span>
                     </div>
                     <button onClick={() => setCapturedImage(null)} className="text-gray-400 hover:text-white"><X size={16}/></button>
                 </div>
