@@ -1,7 +1,6 @@
-
 import React, { useState, useRef, useEffect } from 'react';
 import { Mic, Send, Bot, AlertCircle, StopCircle, Volume2, VolumeX, Radio, Activity, FileText, CheckSquare, Zap, Clock, X, ChevronDown, Camera, Image as ImageIcon } from 'lucide-react';
-import { streamSLASResponse, generateSpeech } from '../services/aiService';
+import { streamSLASResponse, generateSpeech, queryDocument } from '../services/aiService'; // Added queryDocument for RAG
 import { ChatMessage } from '../types';
 import { useLanguage } from '../contexts/LanguageContext';
 
@@ -82,8 +81,7 @@ const SLASAssistant: React.FC<SLASAssistantProps> = ({ currentView }) => {
   const handleSend = async (customText?: string) => {
     const textToSend = customText || input;
     const imageToSend = capturedImage;
-    const docContext = await queryDocument(textToSend);
-    const enhancedPrompt = `${textToSend}\nFrom docs: ${docContext}`;
+    
     if ((!textToSend.trim() && !imageToSend) || loading) return;
     
     // Display message
@@ -102,7 +100,11 @@ const SLASAssistant: React.FC<SLASAssistantProps> = ({ currentView }) => {
 
     let fullText = '';
     try {
-        const stream = streamSLASResponse(textToSend || "Analyze this image.", currentView, currentHistory, language, imageToSend || undefined); 
+        // Add RAG from docs – query document for context, append to prompt (capabilities preserved + enhanced with RAG)
+        const docContext = await queryDocument(textToSend, 'docs/endf_project_doc.pdf'); // Use your PDF path
+        const enhancedPrompt = `${textToSend}\nFrom stored docs: ${docContext}`; // Augment with doc content for better responses
+
+        const stream = streamSLASResponse(enhancedPrompt, currentView, currentHistory, language, imageToSend || undefined); 
 
         for await (const chunk of stream) {
             fullText += chunk;
@@ -137,7 +139,7 @@ const SLASAssistant: React.FC<SLASAssistantProps> = ({ currentView }) => {
               <div className="flex items-center space-x-3">
                   <span className="text-[10px] text-purple-400 font-mono flex items-center">
                       <div className="w-2 h-2 bg-purple-500 rounded-full mr-1 animate-pulse"></div>
-                      WALIA AI
+                      GEMINI 3 PRO
                   </span>
                   <button onClick={() => { setIsOpen(false); }} className="text-gray-400 hover:text-white p-2">
                       <ChevronDown size={24} className="md:hidden" />
@@ -249,7 +251,7 @@ const SLASAssistant: React.FC<SLASAssistantProps> = ({ currentView }) => {
             >
                 <div className="relative flex items-center">
                     <Bot size={28} className={loading ? "animate-spin" : ""} />
-                    <span className="hidden md:inline font-semibold pl-2 font-display tracking-wide">WALIA AI</span>
+                    <span className="hidden md:inline font-semibold pl-2 font-display tracking-wide">SLAS AI</span>
                 </div>
             </button>
         )}
