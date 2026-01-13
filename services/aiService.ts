@@ -531,3 +531,21 @@ export const generateCurriculumGapAnalysis = async (grades: any): Promise<any> =
     const res = await generateContent(prompt, "Curriculum Developer. JSON Only.", true);
     return JSON.parse(cleanJson(res));
 };
+import { PDFLoader } from "langchain/document_loaders/fs/pdf";
+import { RecursiveCharacterTextSplitter } from "langchain/text_splitter";
+import { MemoryVectorStore } from "langchain/vectorstores/memory";
+import { OllamaEmbeddings } from "@langchain/community/embeddings/ollama";
+
+// New offline RAG function (load PDF, embed with Llama3, search, return context)
+export async function queryDocument(query: string, filePath: string = 'docs/endf_project_doc.pdf'): Promise<string> {
+  const loader = new PDFLoader(filePath);
+  const docs = await loader.load();
+  const splitter = new RecursiveCharacterTextSplitter();
+  const splitDocs = await splitter.splitDocuments(docs);
+  const embeddings = new OllamaEmbeddings({ model: "llama3" });
+  const vectorStore = await MemoryVectorStore.fromDocuments(splitDocs, embeddings);
+  const retriever = vectorStore.asRetriever();
+  const results = await retriever.getRelevantDocuments(query);
+  const context = results.map(doc => doc.pageContent).join('\n');
+  return context || 'No relevant info in docs.';
+}
